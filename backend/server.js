@@ -30,7 +30,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/vendors", vendorRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/services', serviceRoutes);
-
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/bookings', bookingRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;

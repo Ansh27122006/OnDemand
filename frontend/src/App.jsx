@@ -11,6 +11,10 @@ import Home from "./pages/customer/Home";
 import Unauthorized from "./pages/auth/Unauthorized";
 import VendorDashboard from "./pages/vendor/VendorDashboard";
 import LandingPage from "./pages/LandingPage";
+import BrowseProducts from "./pages/customer/BrowseProducts";
+import BrowseServices from "./pages/customer/BrowseServices";
+import ProductDetail from "./pages/customer/ProductDetail";
+import ServiceDetail from "./pages/customer/ServiceDetail";
 
 const App = () => {
   return (
@@ -49,6 +53,22 @@ const App = () => {
             element={<VendorDashboard />}
           />
         </Route>
+        <Route
+          path="/products"
+          element={<BrowseProducts />}
+        />
+        <Route
+          path="/services"
+          element={<BrowseServices />}
+        />
+        <Route
+          path="/products/:id"
+          element={<ProductDetail />}
+        />
+        <Route
+          path="/services/:id"
+          element={<ServiceDetail />}
+        />
 
         {/* Admin only — add later */}
         {/* Customer only — add later */}

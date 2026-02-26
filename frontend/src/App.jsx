@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoutes";
+import { useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 
 // Auth pages
@@ -15,11 +16,15 @@ import BrowseProducts from "./pages/customer/BrowseProducts";
 import BrowseServices from "./pages/customer/BrowseServices";
 import ProductDetail from "./pages/customer/ProductDetail";
 import ServiceDetail from "./pages/customer/ServiceDetail";
+import Cart from "./pages/customer/Cart";
+import MyOrders from "./pages/customer/MyOrders";
 
 const App = () => {
+  const location = useLocation();
+  const hideNavbar = ["/login", "/register"].includes(location.pathname);
   return (
     <>
-      <Navbar />
+      {!hideNavbar && <Navbar />}
       <Routes>
         {/* Public routes */}
         <Route
@@ -69,9 +74,24 @@ const App = () => {
           path="/services/:id"
           element={<ServiceDetail />}
         />
-
-        {/* Admin only — add later */}
-        {/* Customer only — add later */}
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={["customer", "vendor", "admin"]} />
+          }>
+          <Route
+            path="/cart"
+            element={<Cart />}
+          />
+        </Route>
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={["customer", "vendor", "admin"]} />
+          }>
+          <Route
+            path="/customer/orders"
+            element={<MyOrders />}
+          />
+        </Route>
       </Routes>
     </>
   );

@@ -1,19 +1,19 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema({
   customerId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     required: true,
   },
   vendorId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'VendorProfile',
+    ref: "VendorProfile",
     required: true,
   },
   serviceId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Service',
+    ref: "Service",
     required: true,
   },
   scheduledDate: {
@@ -26,8 +26,8 @@ const bookingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'completed'],
-    default: 'pending',
+    enum: ["pending", "confirmed", "completed"],
+    default: "pending",
   },
   createdAt: {
     type: Date,
@@ -35,4 +35,4 @@ const bookingSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model('Booking', bookingSchema);
+module.exports = mongoose.model("Booking", bookingSchema);

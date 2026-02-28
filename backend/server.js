@@ -10,8 +10,8 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./config/swagger");
 const productRoutes = require("./routes/productRoutes.js");
 const serviceRoutes = require("./routes/serviceRoutes.js");
-const cartRoutes=require('./routes/cartRoutes.js');
-const orderRoutes=require('./routes/orderRoutes.js');
+const cartRoutes = require("./routes/cartRoutes.js");
+const orderRoutes = require("./routes/orderRoutes.js");
 const bookingRoutes = require("./routes/bookingRoutes.js");
 
 // Load environment variables
@@ -23,18 +23,24 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Vite frontend
+    credentials: true,               // ✅ allow cookies to be sent
+  })
+);
 app.use(express.json());
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/vendors", vendorRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/services', serviceRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/bookings', bookingRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/services", serviceRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/bookings", bookingRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;

@@ -3,6 +3,7 @@ import ProtectedRoute from "./routes/ProtectedRoutes";
 import { useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 
+
 // Auth pages
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -18,6 +19,8 @@ import ProductDetail from "./pages/customer/ProductDetail";
 import ServiceDetail from "./pages/customer/ServiceDetail";
 import Cart from "./pages/customer/Cart";
 import MyOrders from "./pages/customer/MyOrders";
+import ManageProducts from "./pages/vendor/ManageProducts";
+import ManageServices from "./pages/vendor/ManageServices";
 
 const App = () => {
   const location = useLocation();
@@ -92,6 +95,8 @@ const App = () => {
             element={<MyOrders />}
           />
         </Route>
+        <Route path="/vendor/products" element={<ManageProducts />} />
+<Route path="/vendor/services" element={<ManageServices />} />
       </Routes>
     </>
   );

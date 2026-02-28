@@ -8,9 +8,10 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./config/swagger");
 const productRoutes = require("./routes/productRoutes.js");
 const serviceRoutes = require("./routes/serviceRoutes.js");
-const cartRoutes=require('./routes/cartRoutes.js');
-const orderRoutes=require('./routes/orderRoutes.js');
+const cartRoutes = require("./routes/cartRoutes.js");
+const orderRoutes = require("./routes/orderRoutes.js");
 const bookingRoutes = require("./routes/bookingRoutes.js");
+const adminRoutes = require("./routes/adminRoutes.js");
 
 // Load environment variables
 dotenv.config();
@@ -28,11 +29,12 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/vendors", vendorRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/services', serviceRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/bookings', bookingRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/services", serviceRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;

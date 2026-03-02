@@ -41,14 +41,14 @@ const ServiceCard = ({ service }) => {
                 d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"
               />
             </svg>
-            {service.duration} min
+            {service.duration} {service.duration === 1 ? "hour" : "hours"}
           </div>
         )}
 
         <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
           <div>
             <span className="text-lg font-black text-blue-600">
-              ${parseFloat(service.price || 0).toFixed(2)}
+              ₹{parseFloat(service.price || 0).toFixed(2)}
             </span>
             {service.duration && (
               <span className="text-xs text-slate-400 ml-1">/ session</span>

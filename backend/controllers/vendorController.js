@@ -8,7 +8,7 @@ const createVendorProfile = async (req, res) => {
     const { storeName, description, category, logo } = req.body;
 
     // Prevent duplicate profiles for the same user
-    const existing = await VendorProfile.findOne({ userId: req.user.id });
+    const existing = await VendorProfile.findOne({ userId: req.user._id });
     if (existing) {
       return res
         .status(400)
@@ -16,7 +16,7 @@ const createVendorProfile = async (req, res) => {
     }
 
     const profile = await VendorProfile.create({
-      userId: req.user.id,
+      userId: req.user._id,
       storeName,
       description,
       category,
@@ -61,7 +61,7 @@ const updateVendorProfile = async (req, res) => {
     }
 
     // Only the owning vendor or an admin can update
-    const isOwner = profile.userId.toString() === req.user.id.toString();
+    const isOwner = profile.userId.toString() === req.user._id.toString();
     const isAdmin = req.user.role === "admin";
 
     if (!isOwner && !isAdmin) {

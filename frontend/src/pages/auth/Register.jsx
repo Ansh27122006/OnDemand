@@ -12,6 +12,11 @@ const Register = () => {
     email: "",
     password: "",
     role: "customer",
+    storeName: "",
+    description: "",
+    category: "",
+    contact: "",
+    location: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -179,6 +184,106 @@ const Register = () => {
                 Vendor accounts require admin approval before your store goes
                 live.
               </p>
+            )}
+
+            {/* Vendor-specific fields */}
+            {formData.role === "vendor" && (
+              <>
+                {/* Store Name */}
+                <div>
+                  <label
+                    htmlFor="storeName"
+                    className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Store/Business Name
+                  </label>
+                  <input
+                    id="storeName"
+                    name="storeName"
+                    type="text"
+                    required
+                    value={formData.storeName}
+                    onChange={handleChange}
+                    placeholder="My Awesome Store"
+                    className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition"
+                  />
+                </div>
+
+                {/* Category */}
+                <div>
+                  <label
+                    htmlFor="category"
+                    className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Business Category
+                  </label>
+                  <input
+                    id="category"
+                    name="category"
+                    type="text"
+                    required
+                    value={formData.category}
+                    onChange={handleChange}
+                    placeholder="e.g., Electronics, Clothing, Services"
+                    className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition"
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label
+                    htmlFor="description"
+                    className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Business Description
+                  </label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    required
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="Tell us about your business..."
+                    rows="3"
+                    className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition resize-none"
+                  />
+                </div>
+
+                {/* Contact */}
+                <div>
+                  <label
+                    htmlFor="contact"
+                    className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Contact Number/Email
+                  </label>
+                  <input
+                    id="contact"
+                    name="contact"
+                    type="text"
+                    required
+                    value={formData.contact}
+                    onChange={handleChange}
+                    placeholder="e.g., +1 (555) 123-4567 or contact@business.com"
+                    className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition"
+                  />
+                </div>
+
+                {/* Location */}
+                <div>
+                  <label
+                    htmlFor="location"
+                    className="block text-sm font-medium text-zinc-300 mb-1.5">
+                    Business Location
+                  </label>
+                  <input
+                    id="location"
+                    name="location"
+                    type="text"
+                    required
+                    value={formData.location}
+                    onChange={handleChange}
+                    placeholder="e.g., 123 Main St, City, State, ZIP"
+                    className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition"
+                  />
+                </div>
+              </>
             )}
 
             {/* Submit */}

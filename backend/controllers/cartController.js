@@ -1,4 +1,5 @@
 const Cart = require("../models/Cart");
+const Product = require("../models/Product");
 
 // @desc    Get cart for logged-in customer
 // @route   GET /api/cart
@@ -26,6 +27,17 @@ const getCart = async (req, res) => {
 const addToCart = async (req, res) => {
   try {
     const { productId, quantity } = req.body;
+
+    // check product exists and stock
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    if (product.stock !== undefined && product.stock < quantity) {
+      return res.status(400).json({
+        message: `Only ${product.stock} units available`,
+      });
+    }
 
     let cart = await Cart.findOne({ customerId: req.user._id });
 
@@ -137,4 +149,10 @@ const clearCart = async (req, res) => {
   }
 };
 
-module.exports = { getCart, addToCart, updateCartItem, removeCartItem, clearCart };
+module.exports = {
+  getCart,
+  addToCart,
+  updateCartItem,
+  removeCartItem,
+  clearCart,
+};

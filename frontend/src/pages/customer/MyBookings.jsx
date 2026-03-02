@@ -11,8 +11,6 @@ const formatDate = (iso) =>
     year: "numeric",
   });
 
-const shortId = (id = "") => `#${id.slice(0, 8).toUpperCase()}`;
-
 const STATUS_MAP = {
   pending: {
     label: "Pending",
@@ -24,8 +22,8 @@ const STATUS_MAP = {
     classes: "bg-blue-100 text-blue-700 ring-1 ring-blue-300",
     dot: "bg-blue-500",
   },
-  delivered: {
-    label: "Delivered",
+  completed: {
+    label: "Completed",
     classes: "bg-green-100 text-green-700 ring-1 ring-green-300",
     dot: "bg-green-500",
   },
@@ -44,34 +42,34 @@ function StatusBadge({ status }) {
   );
 }
 
-function OrderCard({ order, index }) {
-  const storeName = order.vendorId?.storeName ?? "Unknown Store";
-  const items = order.items ?? [];
+function BookingCard({ booking, index }) {
+  const serviceName = booking.serviceId?.name ?? "Service";
+  const storeName = booking.vendorId?.storeName ?? "Unknown Store";
 
   return (
     <div
-      className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
+      className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
       style={{ animationDelay: `${index * 70}ms` }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100">
-        <div>
-          <span className="font-mono text-sm font-bold text-slate-800 tracking-widest">
-            {shortId(order._id)}
-          </span>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {formatDate(order.createdAt)}
+      <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+        <div className="min-w-0">
+          <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium mb-0.5">
+            Service
           </p>
+          <h3 className="text-base font-bold text-slate-800 truncate leading-snug">
+            {serviceName}
+          </h3>
         </div>
-        <StatusBadge status={order.status} />
+        <StatusBadge status={booking.status} />
       </div>
 
       {/* Body */}
-      <div className="px-5 py-4 space-y-4">
-        {/* Vendor store */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+      <div className="px-5 py-4 grid grid-cols-2 gap-4">
+        {/* Vendor */}
+        <div className="flex items-start gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-violet-50 flex items-center justify-center shrink-0 mt-0.5">
             <svg
-              className="w-4 h-4 text-indigo-500"
+              className="w-4 h-4 text-violet-500"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -88,54 +86,69 @@ function OrderCard({ order, index }) {
               />
             </svg>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium">
               Store
             </p>
-            <p className="text-sm font-semibold text-slate-700 leading-tight">
+            <p className="text-sm font-semibold text-slate-700 truncate leading-tight mt-0.5">
               {storeName}
             </p>
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="border-t border-dashed border-slate-100" />
-
-        {/* Items */}
-        <div>
-          <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium mb-2">
-            Items
-          </p>
-          <ul className="space-y-1.5">
-            {items.map((item, i) => {
-              const name = item.productId?.name ?? item.name ?? "Product";
-              return (
-                <li
-                  key={i}
-                  className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-300 shrink-0" />
-                    <span className="text-sm text-slate-600 truncate">
-                      {name}
-                    </span>
-                  </div>
-                  <span className="ml-3 shrink-0 text-xs font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                    ×{item.quantity}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+        {/* Scheduled date */}
+        <div className="flex items-start gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center shrink-0 mt-0.5">
+            <svg
+              className="w-4 h-4 text-sky-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.8}>
+              <rect
+                x="3"
+                y="4"
+                width="18"
+                height="18"
+                rx="2"
+                ry="2"
+              />
+              <line
+                x1="16"
+                y1="2"
+                x2="16"
+                y2="6"
+              />
+              <line
+                x1="8"
+                y1="2"
+                x2="8"
+                y2="6"
+              />
+              <line
+                x1="3"
+                y1="10"
+                x2="21"
+                y2="10"
+              />
+            </svg>
+          </div>
+          <div>
+            <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium">
+              Scheduled
+            </p>
+            <p className="text-sm font-semibold text-slate-700 leading-tight mt-0.5">
+              {booking.scheduledDate ? formatDate(booking.scheduledDate) : "—"}
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Footer */}
       <div className="flex items-center justify-between px-5 py-3.5 bg-slate-50 border-t border-slate-100">
-        <span className="text-xs text-slate-400">
-          {items.length} item{items.length !== 1 ? "s" : ""}
-        </span>
-        <span className="text-base font-bold text-slate-900">
-          Rs. {order.totalAmount}
+        <span className="text-xs text-slate-400">Total amount</span>
+        <span className="text-base font-bold text-slate-900 tracking-tight">
+          Rs. {booking.totalAmount}
         </span>
       </div>
     </div>
@@ -146,10 +159,10 @@ function Spinner() {
   return (
     <div className="flex flex-col items-center justify-center min-h-64 gap-4">
       <div className="relative w-12 h-12">
-        <div className="absolute inset-0 rounded-full border-4 border-indigo-100" />
-        <div className="absolute inset-0 rounded-full border-4 border-t-indigo-600 animate-spin" />
+        <div className="absolute inset-0 rounded-full border-4 border-violet-100" />
+        <div className="absolute inset-0 rounded-full border-4 border-t-violet-600 animate-spin" />
       </div>
-      <p className="text-sm text-slate-400">Loading your orders…</p>
+      <p className="text-sm text-slate-400">Loading your bookings…</p>
     </div>
   );
 }
@@ -158,9 +171,9 @@ function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center min-h-96 gap-6 text-center px-4">
       <div className="relative">
-        <div className="w-28 h-28 rounded-3xl bg-indigo-50 flex items-center justify-center">
+        <div className="w-28 h-28 rounded-3xl bg-violet-50 flex items-center justify-center">
           <svg
-            className="w-14 h-14 text-indigo-200"
+            className="w-14 h-14 text-violet-200"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -168,7 +181,7 @@ function EmptyState() {
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
             />
           </svg>
         </div>
@@ -176,16 +189,18 @@ function EmptyState() {
           <span className="text-white text-xs font-bold">0</span>
         </div>
       </div>
+
       <div className="space-y-2">
-        <h3 className="text-xl font-bold text-slate-800">No orders yet</h3>
+        <h3 className="text-xl font-bold text-slate-800">No bookings yet</h3>
         <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
-          You haven't placed any orders. Start exploring products from our
-          vendors!
+          You haven't booked any services. Discover what our vendors have to
+          offer!
         </p>
       </div>
+
       <Link
-        to="/products"
-        className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-sm font-semibold rounded-xl shadow-sm shadow-indigo-200 transition-all duration-150">
+        to="/services"
+        className="inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-sm font-semibold rounded-xl shadow-sm shadow-violet-200 transition-all duration-150">
         <svg
           className="w-4 h-4"
           fill="none"
@@ -195,10 +210,10 @@ function EmptyState() {
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+            d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
           />
         </svg>
-        Browse Products
+        Browse Services
       </Link>
     </div>
   );
@@ -224,22 +239,23 @@ function ErrorBanner({ message }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function MyOrders() {
-  const [orders, setOrders] = useState([]);
+export default function MyBookings() {
+  const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     axios
-      .get("/orders/my")
+      .get("/bookings/my")
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : [];
+        // Newest first
         const sorted = [...data].sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
-        setOrders(sorted);
+        setBookings(sorted);
       })
-      .catch(() => setError("Failed to load your orders. Please try again."))
+      .catch(() => setError("Failed to load your bookings. Please try again."))
       .finally(() => setLoading(false));
   }, []);
 
@@ -250,21 +266,22 @@ export default function MyOrders() {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-              My Orders
+              My Bookings
             </h1>
             {!loading && !error && (
               <p className="text-xs text-slate-400 mt-0.5">
-                {orders.length > 0
-                  ? `${orders.length} order${
-                      orders.length !== 1 ? "s" : ""
-                    } placed`
-                  : "No orders yet"}
+                {bookings.length > 0
+                  ? `${bookings.length} booking${
+                      bookings.length !== 1 ? "s" : ""
+                    } made`
+                  : "No bookings yet"}
               </p>
             )}
           </div>
-          {!loading && !error && orders.length > 0 && (
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-600 text-white text-sm font-bold shadow-sm shadow-indigo-300">
-              {orders.length}
+
+          {!loading && !error && bookings.length > 0 && (
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-violet-600 text-white text-sm font-bold shadow-sm shadow-violet-300">
+              {bookings.length}
             </div>
           )}
         </div>
@@ -274,13 +291,13 @@ export default function MyOrders() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         {loading && <Spinner />}
         {!loading && error && <ErrorBanner message={error} />}
-        {!loading && !error && orders.length === 0 && <EmptyState />}
-        {!loading && !error && orders.length > 0 && (
+        {!loading && !error && bookings.length === 0 && <EmptyState />}
+        {!loading && !error && bookings.length > 0 && (
           <div className="flex flex-col gap-4">
-            {orders.map((order, i) => (
-              <OrderCard
-                key={order._id}
-                order={order}
+            {bookings.map((booking, i) => (
+              <BookingCard
+                key={booking._id}
+                booking={booking}
                 index={i}
               />
             ))}

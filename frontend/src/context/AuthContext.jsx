@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
   // On app load — restore session from localStorage if token exists
   useEffect(() => {
     const restoreSession = async () => {
-      const storedToken = localStorage.getItem("vendorlink_token");
+      const storedToken = localStorage.getItem("ondemand_token");
 
       if (!storedToken) {
         setLoading(false);
@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         // Token is invalid or expired — clean up
         console.error("Session restore failed:", error.message);
-        localStorage.removeItem("vendorlink_token");
+        localStorage.removeItem("ondemand_token");
         setToken(null);
         setUser(null);
       } finally {
@@ -38,14 +38,14 @@ export const AuthProvider = ({ children }) => {
 
   // Save token to localStorage and update state
   const login = (userData, userToken) => {
-    localStorage.setItem("vendorlink_token", userToken);
+    localStorage.setItem("ondemand_token", userToken);
     setToken(userToken);
     setUser(userData);
   };
 
   // Remove token from localStorage and clear state
   const logout = () => {
-    localStorage.removeItem("vendorlink_token");
+    localStorage.removeItem("ondemand_token");
     setToken(null);
     setUser(null);
   };

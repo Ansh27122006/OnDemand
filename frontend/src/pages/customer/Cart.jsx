@@ -133,7 +133,7 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, updating }) => {
           </span>
         )}
         <p className="text-sm font-black text-blue-600">
-          ${price.toFixed(2)}{" "}
+          ₹{price.toFixed(2)}{" "}
           <span className="text-slate-400 font-normal text-xs">each</span>
         </p>
       </div>
@@ -141,7 +141,7 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, updating }) => {
       {/* Quantity + Remove */}
       <div className="flex flex-col items-end justify-between gap-2 shrink-0">
         {/* Subtotal */}
-        <p className="text-sm font-black text-slate-800">${subtotal}</p>
+        <p className="text-sm font-black text-slate-800">₹{subtotal}</p>
 
         {/* Quantity controls */}
         <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
@@ -166,7 +166,7 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, updating }) => {
             {item.quantity}
           </span>
           <button
-            onClick={() => onIncrease(item._id)}
+            onClick={() => onIncrease(item._id, item.quantity)}
             className="w-7 h-7 flex items-center justify-center text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors"
             aria-label="Increase quantity">
             <svg
@@ -253,15 +253,16 @@ const Cart = () => {
   }, [toast]);
 
   // ── Increase quantity
-  const handleIncrease = async (itemId) => {
+  const handleIncrease = async (itemId, currentQty) => {
     setUpdating(itemId);
+    const newQty = currentQty + 1;
     try {
-      const res = await api.put(`/cart/${itemId}`, { action: "increase" });
+      const res = await api.put(`/cart/${itemId}`, { quantity: newQty });
       const updated = res.data.item || res.data;
       setCartItems((prev) =>
         prev.map((item) =>
           item._id === itemId
-            ? { ...item, quantity: updated.quantity ?? item.quantity + 1 }
+            ? { ...item, quantity: updated.quantity ?? newQty }
             : item
         )
       );
@@ -277,14 +278,15 @@ const Cart = () => {
     if (currentQty <= 1) {
       return handleRemove(itemId);
     }
+    const newQty = currentQty - 1;
     setUpdating(itemId);
     try {
-      const res = await api.put(`/cart/${itemId}`, { action: "decrease" });
+      const res = await api.put(`/cart/${itemId}`, { quantity: newQty });
       const updated = res.data.item || res.data;
       setCartItems((prev) =>
         prev.map((item) =>
           item._id === itemId
-            ? { ...item, quantity: updated.quantity ?? currentQty - 1 }
+            ? { ...item, quantity: updated.quantity ?? newQty }
             : item
         )
       );
@@ -439,7 +441,7 @@ const Cart = () => {
                           </span>
                         </span>
                         <span className="font-semibold text-slate-800 shrink-0">
-                          ${(price * item.quantity).toFixed(2)}
+                          ₹{(price * item.quantity).toFixed(2)}
                         </span>
                       </div>
                     );
@@ -449,7 +451,7 @@ const Cart = () => {
                 <div className="border-t border-slate-100 pt-4 space-y-2 text-sm">
                   <div className="flex justify-between text-slate-600">
                     <span>Subtotal</span>
-                    <span className="font-semibold">${total.toFixed(2)}</span>
+                    <span className="font-semibold">₹{total.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-slate-600">
                     <span>Shipping</span>
@@ -461,7 +463,7 @@ const Cart = () => {
                 <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
                   <span className="font-black text-slate-900">Total</span>
                   <span className="text-xl font-black text-blue-600">
-                    ${total.toFixed(2)}
+                    ₹{total.toFixed(2)}
                   </span>
                 </div>
 

@@ -6,12 +6,14 @@ import { useAuth } from "../context/AuthContext";
 const navConfig = {
   customer: {
     links: [
-      { label: "Browse Products", to: "/products" },
-      { label: "Browse Services", to: "/services" },
+      { label: "Dashboard", to: "/customer/dashboard" },
+      { label: "Products", to: "/products" },
+      { label: "Services", to: "/services" },
+      { label: "Cart", to: "/customer/cart" },
     ],
     dropdown: [
-      { label: "My Orders", to: "/my-orders" },
-      { label: "My Bookings", to: "/my-bookings" },
+      { label: "My Orders", to: "/customer/orders" },
+      { label: "My Bookings", to: "/customer/bookings" },
     ],
   },
   vendor: {
@@ -19,11 +21,17 @@ const navConfig = {
     dropdown: [
       { label: "Manage Products", to: "/vendor/products" },
       { label: "Manage Services", to: "/vendor/services" },
+      { label: "Manage Orders", to: "/vendor/orders" },
+      { label: "Manage Bookings", to: "/vendor/bookings" },
     ],
   },
   admin: {
     links: [],
-    dropdown: [{ label: "Admin Dashboard", to: "/admin/dashboard" }],
+    dropdown: [
+      { label: "Dashboard", to: "/admin/dashboard" },
+      { label: "Manage Vendors", to: "/admin/vendors" },
+      { label: "Manage Users", to: "/admin/users" },
+    ],
   },
 };
 

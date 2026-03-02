@@ -1,20 +1,22 @@
 const mongoose = require("mongoose");
 
-const orderItemSchema = new mongoose.Schema(
-  {
-    productId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
-    },
-    quantity: {
-      type: Number,
-    },
-    price: {
-      type: Number,
-    },
+const orderItemSchema = new mongoose.Schema({
+  productId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product",
+    required: true,
   },
-  { _id: false }
-);
+  quantity: {
+    type: Number,
+    required: true,
+    min: 1,
+  },
+  price: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+});
 
 const orderSchema = new mongoose.Schema({
   customerId: {
@@ -34,7 +36,7 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "confirmed", "delivered"],
+    enum: ["pending", "confirmed", "delivered", "cancelled"],
     default: "pending",
   },
   createdAt: {

@@ -21,6 +21,13 @@ const createBooking = async (req, res) => {
       return res.status(404).json({ message: "Vendor profile not found" });
     }
 
+    // ensure this vendor is approved before allowing bookings
+    if (!vendorProfile.isApproved) {
+      return res.status(403).json({
+        message: "This vendor is not currently accepting bookings",
+      });
+    }
+
     const booking = await Booking.create({
       customerId: req.user._id,
       vendorId: vendorProfile._id,

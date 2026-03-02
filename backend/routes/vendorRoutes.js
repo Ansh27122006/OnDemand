@@ -231,9 +231,6 @@
 
 // module.exports = router;
 
-
-
-
 const express = require("express");
 const router = express.Router();
 const {
@@ -293,7 +290,7 @@ router.post(
 router.get("/profile", protect, async (req, res) => {
   try {
     const profile = await VendorProfile.findOne({
-      userId: req.user.id,
+      userId: req.user._id,
     }).populate("userId", "name email");
 
     if (!profile) {
@@ -307,6 +304,8 @@ router.get("/profile", protect, async (req, res) => {
       businessName: profile.storeName,
       description: profile.description,
       category: profile.category,
+      contact: profile.contact,
+      location: profile.location,
       logo: profile.logo,
       isApproved: profile.isApproved,
       userId: profile.userId,

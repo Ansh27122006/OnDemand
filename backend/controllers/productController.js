@@ -1,5 +1,5 @@
-const Product = require('../models/Product.js');
-const VendorProfile = require('../models/VendorsProfile.js');
+const Product = require("../models/Product.js");
+const VendorProfile = require("../models/VendorsProfile.js");
 
 // @desc    Add a new product
 // @route   POST /api/products
@@ -9,7 +9,15 @@ const addProduct = async (req, res) => {
     const vendorProfile = await VendorProfile.findOne({ userId: req.user._id });
 
     if (!vendorProfile) {
-      return res.status(404).json({ message: 'Vendor profile not found' });
+      return res.status(404).json({ message: "Vendor profile not found" });
+    }
+
+    // Check if vendor is approved
+    if (!vendorProfile.isApproved) {
+      return res.status(403).json({
+        message:
+          "Your vendor account is not yet approved by admin. You can add products once approved.",
+      });
     }
 
     const { name, description, price, category, images, stock } = req.body;
@@ -28,7 +36,7 @@ const addProduct = async (req, res) => {
 
     res.status(201).json(savedProduct);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -46,7 +54,7 @@ const getAllProducts = async (req, res) => {
     }
 
     if (search) {
-      filter.name = { $regex: search, $options: 'i' };
+      filter.name = { $regex: search, $options: "i" };
     }
 
     if (minPrice !== undefined || maxPrice !== undefined) {
@@ -55,11 +63,17 @@ const getAllProducts = async (req, res) => {
       if (maxPrice !== undefined) filter.price.$lte = Number(maxPrice);
     }
 
-    const products = await Product.find(filter);
+    const products = await Product.find(filter).populate({
+      path: "vendorId",
+      match: { isApproved: true },
+    });
 
-    res.status(200).json(products);
+    // Only return items whose vendor passed the approval match
+    const approvedProducts = products.filter((p) => p.vendorId !== null);
+
+    res.status(200).json(approvedProducts);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -68,15 +82,20 @@ const getAllProducts = async (req, res) => {
 // @access  Public
 const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id).populate("vendorId");
 
     if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // vendor may have been unapproved after product creation
+    if (!product.vendorId?.isApproved) {
+      return res.status(403).json({ message: "This product is not available" });
     }
 
     res.status(200).json(product);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -88,20 +107,29 @@ const updateProduct = async (req, res) => {
     const vendorProfile = await VendorProfile.findOne({ userId: req.user._id });
 
     if (!vendorProfile) {
-      return res.status(404).json({ message: 'Vendor profile not found' });
+      return res.status(404).json({ message: "Vendor profile not found" });
     }
 
     const product = await Product.findById(req.params.id);
 
     if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
+      return res.status(404).json({ message: "Product not found" });
     }
 
     if (product.vendorId.toString() !== vendorProfile._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to update this product' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this product" });
     }
 
-    const allowedUpdates = ['name', 'description', 'price', 'category', 'images', 'stock'];
+    const allowedUpdates = [
+      "name",
+      "description",
+      "price",
+      "category",
+      "images",
+      "stock",
+    ];
     allowedUpdates.forEach((field) => {
       if (req.body[field] !== undefined) {
         product[field] = req.body[field];
@@ -112,7 +140,7 @@ const updateProduct = async (req, res) => {
 
     res.status(200).json(updatedProduct);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -124,24 +152,45 @@ const deleteProduct = async (req, res) => {
     const vendorProfile = await VendorProfile.findOne({ userId: req.user._id });
 
     if (!vendorProfile) {
-      return res.status(404).json({ message: 'Vendor profile not found' });
+      return res.status(404).json({ message: "Vendor profile not found" });
     }
 
     const product = await Product.findById(req.params.id);
 
     if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
+      return res.status(404).json({ message: "Product not found" });
     }
 
     if (product.vendorId.toString() !== vendorProfile._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to delete this product' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this product" });
     }
 
     await product.deleteOne();
 
-    res.status(200).json({ message: 'Product deleted successfully' });
+    res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Get all products for the logged-in vendor (their own products)
+// @route   GET /api/products/my/list
+// @access  Vendor only
+const getMyProducts = async (req, res) => {
+  try {
+    const vendorProfile = await VendorProfile.findOne({ userId: req.user._id });
+
+    if (!vendorProfile) {
+      return res.status(404).json({ message: "Vendor profile not found" });
+    }
+
+    const products = await Product.find({ vendorId: vendorProfile._id });
+
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -155,14 +204,23 @@ const getProductsByVendor = async (req, res) => {
     const vendorExists = await VendorProfile.findById(vendorId);
 
     if (!vendorExists) {
-      return res.status(404).json({ message: 'Vendor not found' });
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    // Allow vendor to view their own products regardless of approval status (for management)
+    // For public access, only show approved vendors' products
+    const isOwnVendor =
+      req.user && vendorExists.userId.toString() === req.user._id.toString();
+
+    if (!vendorExists.isApproved && !isOwnVendor) {
+      return res.status(403).json({ message: "Vendor not approved" });
     }
 
     const products = await Product.find({ vendorId });
 
     res.status(200).json(products);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -172,5 +230,6 @@ module.exports = {
   getProductById,
   updateProduct,
   deleteProduct,
+  getMyProducts,
   getProductsByVendor,
 };

@@ -1,15 +1,16 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const { protect, authorizeRoles } = require('../middleware/authMiddleware.js');
+const { protect, authorizeRoles } = require("../middleware/authMiddleware.js");
 const {
   addService,
   getAllServices,
   getServicesByVendor,
+  getMyServices,
   getServiceById,
   updateService,
   deleteService,
-} = require('../controllers/serviceController.js');
+} = require("../controllers/serviceController.js");
 
 /**
  * @swagger
@@ -74,7 +75,7 @@ const {
  *       403:
  *         description: Forbidden - Only vendors can create services
  */
-router.post('/', protect, authorizeRoles('vendor'), addService);
+router.post("/", protect, authorizeRoles("vendor"), addService);
 
 /**
  * @swagger
@@ -128,7 +129,7 @@ router.post('/', protect, authorizeRoles('vendor'), addService);
  *       500:
  *         description: Server error
  */
-router.get('/', getAllServices);
+router.get("/", getAllServices);
 
 /**
  * @swagger
@@ -170,7 +171,48 @@ router.get('/', getAllServices);
  *       500:
  *         description: Server error
  */
-router.get('/vendor/:vendorId', getServicesByVendor);
+router.get("/my/list", protect, authorizeRoles("vendor"), getMyServices);
+
+/**
+ * @swagger
+ * /services/vendor/{vendorId}:
+ *   get:
+ *     summary: Get all services by a specific vendor
+ *     description: Retrieve all published services for a vendor
+ *     tags:
+ *       - Services
+ *     parameters:
+ *       - name: vendorId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Services retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   price:
+ *                     type: number
+ *                   vendorId:
+ *                     type: string
+ *       404:
+ *         description: Vendor not found
+ *       500:
+ *         description: Server error
+ */
+router.get("/vendor/:vendorId", getServicesByVendor);
 
 /**
  * @swagger
@@ -215,7 +257,7 @@ router.get('/vendor/:vendorId', getServicesByVendor);
  *       500:
  *         description: Server error
  */
-router.get('/:id', getServiceById);
+router.get("/:id", getServiceById);
 
 /**
  * @swagger
@@ -284,7 +326,7 @@ router.get('/:id', getServiceById);
  *       500:
  *         description: Server error
  */
-router.put('/:id', protect, authorizeRoles('vendor'), updateService);
+router.put("/:id", protect, authorizeRoles("vendor"), updateService);
 
 /**
  * @swagger
@@ -323,6 +365,6 @@ router.put('/:id', protect, authorizeRoles('vendor'), updateService);
  *       500:
  *         description: Server error
  */
-router.delete('/:id', protect, authorizeRoles('vendor'), deleteService);
+router.delete("/:id", protect, authorizeRoles("vendor"), deleteService);
 
 module.exports = router;

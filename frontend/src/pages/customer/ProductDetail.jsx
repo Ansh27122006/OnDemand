@@ -143,9 +143,19 @@ const ProductDetail = () => {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product || product.stock === 0) return;
-    setToast(`"${product.name}" added to cart!`);
+
+    try {
+      await api.post("/cart", {
+        productId: product._id,
+        quantity: quantity,
+      });
+      setToast(`"${product.name}" added to cart!`);
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to add to cart";
+      setToast(msg);
+    }
   };
 
   const images =

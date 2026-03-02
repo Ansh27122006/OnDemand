@@ -1,5 +1,5 @@
-const Service = require('../models/Service.js');
-const VendorProfile = require('../models/VendorsProfile.js');
+const Service = require("../models/Service.js");
+const VendorProfile = require("../models/VendorsProfile.js");
 
 // @desc    Add a new service
 // @route   POST /api/services
@@ -9,10 +9,26 @@ const addService = async (req, res) => {
     const vendorProfile = await VendorProfile.findOne({ userId: req.user._id });
 
     if (!vendorProfile) {
-      return res.status(404).json({ message: 'Vendor profile not found' });
+      return res.status(404).json({ message: "Vendor profile not found" });
     }
 
-    const { name, description, price, category, duration, availability, images } = req.body;
+    // Check if vendor is approved
+    if (!vendorProfile.isApproved) {
+      return res.status(403).json({
+        message:
+          "Your vendor account is not yet approved by admin. You can add services once approved.",
+      });
+    }
+
+    const {
+      name,
+      description,
+      price,
+      category,
+      duration,
+      availability,
+      images,
+    } = req.body;
 
     const service = new Service({
       vendorId: vendorProfile._id,
@@ -29,7 +45,7 @@ const addService = async (req, res) => {
 
     res.status(201).json(savedService);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -47,7 +63,7 @@ const getAllServices = async (req, res) => {
     }
 
     if (search) {
-      filter.name = { $regex: search, $options: 'i' };
+      filter.name = { $regex: search, $options: "i" };
     }
 
     if (minPrice !== undefined || maxPrice !== undefined) {
@@ -56,11 +72,16 @@ const getAllServices = async (req, res) => {
       if (maxPrice !== undefined) filter.price.$lte = Number(maxPrice);
     }
 
-    const services = await Service.find(filter);
+    const services = await Service.find(filter).populate({
+      path: "vendorId",
+      match: { isApproved: true },
+    });
 
-    res.status(200).json(services);
+    const approvedServices = services.filter((s) => s.vendorId !== null);
+
+    res.status(200).json(approvedServices);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -69,15 +90,19 @@ const getAllServices = async (req, res) => {
 // @access  Public
 const getServiceById = async (req, res) => {
   try {
-    const service = await Service.findById(req.params.id);
+    const service = await Service.findById(req.params.id).populate("vendorId");
 
     if (!service) {
-      return res.status(404).json({ message: 'Service not found' });
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    if (!service.vendorId?.isApproved) {
+      return res.status(403).json({ message: "This service is not available" });
     }
 
     res.status(200).json(service);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -89,20 +114,30 @@ const updateService = async (req, res) => {
     const vendorProfile = await VendorProfile.findOne({ userId: req.user._id });
 
     if (!vendorProfile) {
-      return res.status(404).json({ message: 'Vendor profile not found' });
+      return res.status(404).json({ message: "Vendor profile not found" });
     }
 
     const service = await Service.findById(req.params.id);
 
     if (!service) {
-      return res.status(404).json({ message: 'Service not found' });
+      return res.status(404).json({ message: "Service not found" });
     }
 
     if (service.vendorId.toString() !== vendorProfile._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to update this service' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this service" });
     }
 
-    const allowedUpdates = ['name', 'description', 'price', 'category', 'duration', 'availability', 'images'];
+    const allowedUpdates = [
+      "name",
+      "description",
+      "price",
+      "category",
+      "duration",
+      "availability",
+      "images",
+    ];
     allowedUpdates.forEach((field) => {
       if (req.body[field] !== undefined) {
         service[field] = req.body[field];
@@ -113,7 +148,7 @@ const updateService = async (req, res) => {
 
     res.status(200).json(updatedService);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -125,24 +160,45 @@ const deleteService = async (req, res) => {
     const vendorProfile = await VendorProfile.findOne({ userId: req.user._id });
 
     if (!vendorProfile) {
-      return res.status(404).json({ message: 'Vendor profile not found' });
+      return res.status(404).json({ message: "Vendor profile not found" });
     }
 
     const service = await Service.findById(req.params.id);
 
     if (!service) {
-      return res.status(404).json({ message: 'Service not found' });
+      return res.status(404).json({ message: "Service not found" });
     }
 
     if (service.vendorId.toString() !== vendorProfile._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to delete this service' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this service" });
     }
 
     await service.deleteOne();
 
-    res.status(200).json({ message: 'Service deleted successfully' });
+    res.status(200).json({ message: "Service deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Get all services for the logged-in vendor (their own services)
+// @route   GET /api/services/my/list
+// @access  Vendor only
+const getMyServices = async (req, res) => {
+  try {
+    const vendorProfile = await VendorProfile.findOne({ userId: req.user._id });
+
+    if (!vendorProfile) {
+      return res.status(404).json({ message: "Vendor profile not found" });
+    }
+
+    const services = await Service.find({ vendorId: vendorProfile._id });
+
+    res.status(200).json(services);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -156,14 +212,23 @@ const getServicesByVendor = async (req, res) => {
     const vendorExists = await VendorProfile.findById(vendorId);
 
     if (!vendorExists) {
-      return res.status(404).json({ message: 'Vendor not found' });
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    // Allow vendor to view their own services regardless of approval status (for management)
+    // For public access, only show approved vendors' services
+    const isOwnVendor =
+      req.user && vendorExists.userId.toString() === req.user._id.toString();
+
+    if (!vendorExists.isApproved && !isOwnVendor) {
+      return res.status(403).json({ message: "Vendor not approved" });
     }
 
     const services = await Service.find({ vendorId });
 
     res.status(200).json(services);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -173,5 +238,6 @@ module.exports = {
   getServiceById,
   updateService,
   deleteService,
+  getMyServices,
   getServicesByVendor,
 };

@@ -5,6 +5,7 @@ const vendorProfileSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: [true, "User ID is required"],
+    unique: true,
   },
   storeName: {
     type: String,
@@ -16,6 +17,14 @@ const vendorProfileSchema = new mongoose.Schema({
     trim: true,
   },
   category: {
+    type: String,
+    trim: true,
+  },
+  contact: {
+    type: String,
+    trim: true,
+  },
+  location: {
     type: String,
     trim: true,
   },

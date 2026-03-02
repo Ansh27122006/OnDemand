@@ -4,9 +4,9 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "VendorLink API",
+      title: "OnDemand API",
       version: "1.0.0",
-      description: "REST API documentation for the VendorLink backend",
+      description: "REST API documentation for the OnDemand backend",
     },
     servers: [
       {

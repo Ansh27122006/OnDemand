@@ -12,8 +12,6 @@ const productRoutes = require("./routes/productRoutes.js");
 const serviceRoutes = require("./routes/serviceRoutes.js");
 const cartRoutes = require("./routes/cartRoutes.js");
 const orderRoutes = require("./routes/orderRoutes.js");
-const cartRoutes = require("./routes/cartRoutes.js");
-const orderRoutes = require("./routes/orderRoutes.js");
 const bookingRoutes = require("./routes/bookingRoutes.js");
 const adminRoutes = require("./routes/adminRoutes.js");
 
@@ -28,8 +26,8 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173", // Vite frontend
-    credentials: true, // ✅ allow cookies to be sent
+    origin: "http://localhost:5173",
+    credentials: true,
   })
 );
 app.use(express.json());
@@ -38,7 +36,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/vendors", vendorRoutes);
+app.use("/api/vendors", vendorRoutes); // plural to match frontend & spec
 app.use("/api/products", productRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/cart", cartRoutes);
@@ -48,6 +46,28 @@ app.use("/api/admin", adminRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error("Error:", err);
+
+  const statusCode = err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+
+  res.status(statusCode).json({
+    success: false,
+    message,
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

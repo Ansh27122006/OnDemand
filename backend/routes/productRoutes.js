@@ -1,15 +1,16 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const { protect, authorizeRoles } = require('../middleware/authMiddleware.js');
+const { protect, authorizeRoles } = require("../middleware/authMiddleware.js");
 const {
   addProduct,
   getAllProducts,
   getProductsByVendor,
+  getMyProducts,
   getProductById,
   updateProduct,
   deleteProduct,
-} = require('../controllers/productController.js');
+} = require("../controllers/productController.js");
 
 /**
  * @swagger
@@ -83,7 +84,7 @@ const {
  *       403:
  *         description: Forbidden - Only vendors can create products
  */
-router.post('/', protect, authorizeRoles('vendor'), addProduct);
+router.post("/", protect, authorizeRoles("vendor"), addProduct);
 
 /**
  * @swagger
@@ -156,7 +157,7 @@ router.post('/', protect, authorizeRoles('vendor'), addProduct);
  *       500:
  *         description: Server error
  */
-router.get('/', getAllProducts);
+router.get("/", getAllProducts);
 
 /**
  * @swagger
@@ -197,10 +198,58 @@ router.get('/', getAllProducts);
  *                     type: string
  *       404:
  *         description: Vendor not found
+ *     description: Server error
+ */
+router.get("/my/list", protect, authorizeRoles("vendor"), getMyProducts);
+
+/**
+ * @swagger
+ * /products/vendor/{vendorId}:
+ *   get:
+ *     summary: Get all products by a specific vendor
+ *     description: Retrieve all published products for a vendor
+ *     tags:
+ *       - Products
+ *     parameters:
+ *       - name: vendorId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Products retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   price:
+ *                     type: number
+ *                   category:
+ *                     type: string
+ *                   images:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   stock:
+ *                     type: integer
+ *                   vendorId:
+ *                     type: string
+ *       404:
+ *         description: Vendor not found
  *       500:
  *         description: Server error
  */
-router.get('/vendor/:vendorId', getProductsByVendor);
+router.get("/vendor/:vendorId", getProductsByVendor);
 
 /**
  * @swagger
@@ -251,7 +300,7 @@ router.get('/vendor/:vendorId', getProductsByVendor);
  *       500:
  *         description: Server error
  */
-router.get('/:id', getProductById);
+router.get("/:id", getProductById);
 
 /**
  * @swagger
@@ -328,7 +377,7 @@ router.get('/:id', getProductById);
  *       500:
  *         description: Server error
  */
-router.put('/:id', protect, authorizeRoles('vendor'), updateProduct);
+router.put("/:id", protect, authorizeRoles("vendor"), updateProduct);
 
 /**
  * @swagger
@@ -367,6 +416,6 @@ router.put('/:id', protect, authorizeRoles('vendor'), updateProduct);
  *       500:
  *         description: Server error
  */
-router.delete('/:id', protect, authorizeRoles('vendor'), deleteProduct);
+router.delete("/:id", protect, authorizeRoles("vendor"), deleteProduct);
 
 module.exports = router;

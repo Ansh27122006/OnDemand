@@ -37,8 +37,7 @@ function StatusBadge({ status }) {
   const cfg = STATUS_MAP[status] ?? STATUS_MAP.pending;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${cfg.classes}`}
-    >
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${cfg.classes}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
       {cfg.label}
     </span>
@@ -52,15 +51,16 @@ function OrderCard({ order, index }) {
   return (
     <div
       className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
-      style={{ animationDelay: `${index * 70}ms` }}
-    >
+      style={{ animationDelay: `${index * 70}ms` }}>
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100">
         <div>
           <span className="font-mono text-sm font-bold text-slate-800 tracking-widest">
             {shortId(order._id)}
           </span>
-          <p className="text-xs text-slate-400 mt-0.5">{formatDate(order.createdAt)}</p>
+          <p className="text-xs text-slate-400 mt-0.5">
+            {formatDate(order.createdAt)}
+          </p>
         </div>
         <StatusBadge status={order.status} />
       </div>
@@ -75,8 +75,7 @@ function OrderCard({ order, index }) {
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
-              strokeWidth={1.8}
-            >
+              strokeWidth={1.8}>
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -93,7 +92,9 @@ function OrderCard({ order, index }) {
             <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium">
               Store
             </p>
-            <p className="text-sm font-semibold text-slate-700 leading-tight">{storeName}</p>
+            <p className="text-sm font-semibold text-slate-700 leading-tight">
+              {storeName}
+            </p>
           </div>
         </div>
 
@@ -109,10 +110,14 @@ function OrderCard({ order, index }) {
             {items.map((item, i) => {
               const name = item.productId?.name ?? item.name ?? "Product";
               return (
-                <li key={i} className="flex items-center justify-between">
+                <li
+                  key={i}
+                  className="flex items-center justify-between">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-indigo-300 shrink-0" />
-                    <span className="text-sm text-slate-600 truncate">{name}</span>
+                    <span className="text-sm text-slate-600 truncate">
+                      {name}
+                    </span>
                   </div>
                   <span className="ml-3 shrink-0 text-xs font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
                     ×{item.quantity}
@@ -129,7 +134,9 @@ function OrderCard({ order, index }) {
         <span className="text-xs text-slate-400">
           {items.length} item{items.length !== 1 ? "s" : ""}
         </span>
-        <span className="text-base font-bold text-slate-900">Rs. {order.totalAmount}</span>
+        <span className="text-base font-bold text-slate-900">
+          Rs. {order.totalAmount}
+        </span>
       </div>
     </div>
   );
@@ -157,8 +164,7 @@ function EmptyState() {
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
-            strokeWidth={1.2}
-          >
+            strokeWidth={1.2}>
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -173,20 +179,19 @@ function EmptyState() {
       <div className="space-y-2">
         <h3 className="text-xl font-bold text-slate-800">No orders yet</h3>
         <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
-          You haven't placed any orders. Start exploring products from our vendors!
+          You haven't placed any orders. Start exploring products from our
+          vendors!
         </p>
       </div>
       <Link
         to="/products"
-        className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-sm font-semibold rounded-xl shadow-sm shadow-indigo-200 transition-all duration-150"
-      >
+        className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-sm font-semibold rounded-xl shadow-sm shadow-indigo-200 transition-all duration-150">
         <svg
           className="w-4 h-4"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
-          strokeWidth={2}
-        >
+          strokeWidth={2}>
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -202,7 +207,10 @@ function EmptyState() {
 function ErrorBanner({ message }) {
   return (
     <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-2xl px-5 py-4">
-      <svg className="w-4 h-4 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <svg
+        className="w-4 h-4 shrink-0 mt-0.5"
+        viewBox="0 0 20 20"
+        fill="currentColor">
         <path
           fillRule="evenodd"
           d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
@@ -223,7 +231,7 @@ export default function MyOrders() {
 
   useEffect(() => {
     axios
-      .get("/api/orders/my")
+      .get("/orders/my")
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : [];
         const sorted = [...data].sort(
@@ -241,11 +249,15 @@ export default function MyOrders() {
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">My Orders</h1>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+              My Orders
+            </h1>
             {!loading && !error && (
               <p className="text-xs text-slate-400 mt-0.5">
                 {orders.length > 0
-                  ? `${orders.length} order${orders.length !== 1 ? "s" : ""} placed`
+                  ? `${orders.length} order${
+                      orders.length !== 1 ? "s" : ""
+                    } placed`
                   : "No orders yet"}
               </p>
             )}
@@ -266,7 +278,11 @@ export default function MyOrders() {
         {!loading && !error && orders.length > 0 && (
           <div className="flex flex-col gap-4">
             {orders.map((order, i) => (
-              <OrderCard key={order._id} order={order} index={i} />
+              <OrderCard
+                key={order._id}
+                order={order}
+                index={i}
+              />
             ))}
           </div>
         )}

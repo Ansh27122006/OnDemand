@@ -1,5 +1,6 @@
 const Order = require("../models/Order");
 const Cart = require("../models/Cart");
+const Product = require("../models/Product");
 const VendorProfile = require("../models/VendorsProfile");
 
 // ─────────────────────────────────────────────
@@ -17,38 +18,91 @@ const placeOrder = async (req, res) => {
       return res.status(400).json({ message: "Your cart is empty." });
     }
 
-    // Build items snapshot and calculate total
-    const itemsSnapshot = cart.items.map((item) => ({
-      productId: item.productId._id,
-      name: item.productId.name,
-      price: item.productId.price,
-      quantity: item.quantity,
-    }));
+    // validate stock for each item before proceeding
+    for (const item of cart.items) {
+      const product = item.productId;
+      if (!product) {
+        return res.status(404).json({
+          message: `Product ${item.productId} not found`,
+        });
+      }
 
-    const totalAmount = itemsSnapshot.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
+      if (product.stock === undefined || product.stock === null) {
+        return res.status(400).json({
+          message: `Product "${product.name}" does not have stock information`,
+        });
+      }
 
-    // Derive vendorId from the first product in the cart
-    const vendorId = cart.items[0].productId.vendorId;
+      if (product.stock < item.quantity) {
+        return res.status(400).json({
+          message: `Insufficient stock for "${product.name}". Available: ${product.stock}, Requested: ${item.quantity}`,
+        });
+      }
+    }
 
-    const order = await Order.create({
-      customerId: req.user._id,
-      vendorId,
-      items: itemsSnapshot,
-      totalAmount,
-      status: "pending",
+    /**
+     * Split the cart into separate orders per vendor.
+     * Previously we derived a single vendor ID from the first item,
+     * which meant mixed-vendor carts would only create an order for
+     * the first vendor and drop everything else (BUG #12).
+     *
+     * The new logic groups items by their `vendorId` and then
+     * creates one Order document for each vendor-group.
+     */
+    const itemsByVendor = {};
+    cart.items.forEach((item) => {
+      const vendorId = item.productId.vendorId.toString();
+      if (!itemsByVendor[vendorId]) {
+        itemsByVendor[vendorId] = [];
+      }
+      itemsByVendor[vendorId].push(item);
     });
 
-    // Clear the cart after order is placed
+    const createdOrders = [];
+
+    for (const [vendorId, items] of Object.entries(itemsByVendor)) {
+      const itemsSnapshot = items.map((item) => ({
+        productId: item.productId._id,
+        name: item.productId.name,
+        price: item.productId.price,
+        quantity: item.quantity,
+      }));
+
+      const vendorTotal = itemsSnapshot.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+
+      const order = await Order.create({
+        customerId: req.user._id,
+        vendorId,
+        items: itemsSnapshot,
+        totalAmount: vendorTotal,
+        status: "pending",
+      });
+
+      createdOrders.push(order);
+    }
+
+    // reduce stock after all orders have been created
+    for (const item of cart.items) {
+      await Product.findByIdAndUpdate(item.productId._id, {
+        $inc: { stock: -item.quantity },
+      });
+    }
+
+    // clear cart now that orders exist
     cart.items = [];
     await cart.save();
 
-    return res.status(201).json(order);
+    return res
+      .status(201)
+      .json({ message: "Orders placed", orders: createdOrders });
   } catch (error) {
     console.error("placeOrder error:", error);
-    return res.status(500).json({ message: "Server error while placing order." });
+    return res
+      .status(500)
+      .json({ message: "Server error while placing order." });
   }
 };
 
@@ -66,7 +120,9 @@ const getMyOrders = async (req, res) => {
     return res.status(200).json(orders);
   } catch (error) {
     console.error("getMyOrders error:", error);
-    return res.status(500).json({ message: "Server error while fetching orders." });
+    return res
+      .status(500)
+      .json({ message: "Server error while fetching orders." });
   }
 };
 
@@ -90,7 +146,9 @@ const getVendorOrders = async (req, res) => {
     return res.status(200).json(orders);
   } catch (error) {
     console.error("getVendorOrders error:", error);
-    return res.status(500).json({ message: "Server error while fetching vendor orders." });
+    return res
+      .status(500)
+      .json({ message: "Server error while fetching vendor orders." });
   }
 };
 
@@ -106,7 +164,9 @@ const updateOrderStatus = async (req, res) => {
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
-        message: `Invalid status. Must be one of: ${allowedStatuses.join(", ")}.`,
+        message: `Invalid status. Must be one of: ${allowedStatuses.join(
+          ", "
+        )}.`,
       });
     }
 
@@ -124,7 +184,9 @@ const updateOrderStatus = async (req, res) => {
 
     // Ensure this order belongs to the requesting vendor
     if (order.vendorId.toString() !== vendorProfile._id.toString()) {
-      return res.status(403).json({ message: "Not authorised to update this order." });
+      return res
+        .status(403)
+        .json({ message: "Not authorised to update this order." });
     }
 
     order.status = status;
@@ -133,7 +195,9 @@ const updateOrderStatus = async (req, res) => {
     return res.status(200).json(updatedOrder);
   } catch (error) {
     console.error("updateOrderStatus error:", error);
-    return res.status(500).json({ message: "Server error while updating order status." });
+    return res
+      .status(500)
+      .json({ message: "Server error while updating order status." });
   }
 };
 
@@ -155,7 +219,9 @@ const getOrderById = async (req, res) => {
     return res.status(200).json(order);
   } catch (error) {
     console.error("getOrderById error:", error);
-    return res.status(500).json({ message: "Server error while fetching order." });
+    return res
+      .status(500)
+      .json({ message: "Server error while fetching order." });
   }
 };
 

@@ -308,7 +308,7 @@ const ServiceDetail = () => {
                 {/* Price */}
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-black text-blue-600">
-                    ${parseFloat(service.price || 0).toFixed(2)}
+                    ₹{parseFloat(service.price || 0).toFixed(2)}
                   </span>
                   <span className="text-sm text-slate-400 font-medium">
                     / session
@@ -320,7 +320,9 @@ const ServiceDetail = () => {
                   {service.duration && (
                     <DetailRow
                       label="Duration"
-                      value={`${service.duration} minutes`}
+                      value={`${service.duration} ${
+                        service.duration === 1 ? "hour" : "hours"
+                      }`}
                       icon={
                         <svg
                           className="w-4 h-4"
@@ -502,7 +504,8 @@ const ServiceDetail = () => {
                         <div className="flex justify-between text-slate-600">
                           <span>Duration</span>
                           <span className="font-semibold text-slate-800">
-                            {service.duration} min
+                            {service.duration}{" "}
+                            {service.duration === 1 ? "hour" : "hours"}
                           </span>
                         </div>
                       )}
@@ -522,7 +525,7 @@ const ServiceDetail = () => {
                       <div className="border-t border-blue-200 pt-2 flex justify-between">
                         <span className="font-bold text-slate-700">Total</span>
                         <span className="font-black text-blue-600">
-                          ${parseFloat(service.price || 0).toFixed(2)}
+                          ₹{parseFloat(service.price || 0).toFixed(2)}
                         </span>
                       </div>
                     </div>

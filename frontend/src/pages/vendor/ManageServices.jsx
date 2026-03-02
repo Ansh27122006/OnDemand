@@ -2,7 +2,52 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════
+   Field — defined at module level so React
+   never treats it as a new component type
+   between renders. This prevents focus loss.
+══════════════════════════════════════════ */
+const inputBase =
+  "w-full px-4 py-2.5 rounded-xl border text-sm bg-gray-50 focus:bg-white transition-colors outline-none focus:ring-2 focus:ring-violet-500/30";
+
+const Field = ({
+  label,
+  name,
+  type = "text",
+  required,
+  placeholder,
+  as: Tag = "input",
+  form,
+  errors,
+  onChange,
+  ...rest
+}) => (
+  <div>
+    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+      {label} {required && <span className="text-red-400">*</span>}
+    </label>
+    <Tag
+      name={name}
+      type={type}
+      value={form[name]}
+      onChange={onChange}
+      placeholder={placeholder}
+      className={`${inputBase} ${
+        errors[name]
+          ? "border-red-300 focus:border-red-400"
+          : "border-gray-200 focus:border-violet-400"
+      } ${Tag === "textarea" ? "resize-none h-24" : ""}`}
+      {...rest}
+    />
+    {errors[name] && (
+      <p className="text-red-500 text-xs mt-1">{errors[name]}</p>
+    )}
+  </div>
+);
+
+/* ══════════════════════════════════════════
+   Toast
+══════════════════════════════════════════ */
 const Toast = ({ message, type, onClose }) => {
   useEffect(() => {
     const t = setTimeout(onClose, 3500);
@@ -27,7 +72,9 @@ const Toast = ({ message, type, onClose }) => {
   );
 };
 
-// ─── Confirm Dialog ───────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════
+   ConfirmDialog
+══════════════════════════════════════════ */
 const ConfirmDialog = ({ serviceName, onConfirm, onCancel }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
     <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center border border-gray-100">
@@ -56,7 +103,9 @@ const ConfirmDialog = ({ serviceName, onConfirm, onCancel }) => (
   </div>
 );
 
-// ─── Service Modal ─────────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════
+   ServiceModal — also at module level
+══════════════════════════════════════════ */
 const EMPTY_FORM = {
   name: "",
   description: "",
@@ -84,7 +133,11 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = "Service name is required";
-    if (form.price === "" || isNaN(form.price) || Number(form.price) < 0)
+    if (
+      form.price === "" ||
+      isNaN(Number(form.price)) ||
+      Number(form.price) < 0
+    )
       e.price = "Valid price is required";
     if (!form.category.trim()) e.category = "Category is required";
     if (!form.duration.trim()) e.duration = "Duration is required";
@@ -93,8 +146,8 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
-    if (errors[name]) setErrors((p) => ({ ...p, [name]: undefined }));
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
   const handleSubmit = (e) => {
@@ -107,44 +160,13 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
     onSubmit({ ...form, price: Number(form.price) });
   };
 
-  const inputBase =
-    "w-full px-4 py-2.5 rounded-xl border text-sm bg-gray-50 focus:bg-white transition-colors outline-none focus:ring-2 focus:ring-violet-500/30";
-
-  const Field = ({
-    label,
-    name,
-    type = "text",
-    required,
-    placeholder,
-    as: Tag = "input",
-    ...rest
-  }) => (
-    <div>
-      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-        {label} {required && <span className="text-red-400">*</span>}
-      </label>
-      <Tag
-        name={name}
-        type={type}
-        value={form[name]}
-        onChange={handleChange}
-        placeholder={placeholder}
-        className={`${inputBase} ${
-          errors[name]
-            ? "border-red-300 focus:border-red-400"
-            : "border-gray-200 focus:border-violet-400"
-        } ${Tag === "textarea" ? "resize-none h-24" : ""}`}
-        {...rest}
-      />
-      {errors[name] && (
-        <p className="text-red-500 text-xs mt-1">{errors[name]}</p>
-      )}
-    </div>
-  );
+  /* Shared props passed down to every Field */
+  const fieldProps = { form, errors, onChange: handleChange };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100 overflow-hidden">
+        {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-violet-600 to-violet-700">
           <div>
             <h2 className="text-lg font-bold text-white">
@@ -162,6 +184,8 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
             ✕
           </button>
         </div>
+
+        {/* Form */}
         <form
           onSubmit={handleSubmit}
           className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
@@ -170,41 +194,59 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
             name="name"
             required
             placeholder="e.g. Home Cleaning"
+            {...fieldProps}
           />
           <Field
             label="Description"
             name="description"
             as="textarea"
             placeholder="Describe your service…"
+            {...fieldProps}
           />
           <div className="grid grid-cols-2 gap-4">
+            {/* Price — step="any" allows any decimal; inputMode helps mobile keyboards */}
             <Field
-              label="Price ($)"
+              label="Price (₹)"
               name="price"
               type="number"
               required
               placeholder="0.00"
               min="0"
-              step="0.01"
+              step="any"
+              inputMode="decimal"
+              {...fieldProps}
             />
-            <Field
-              label="Duration"
-              name="duration"
-              required
-              placeholder="e.g. 1 hour"
-            />
+            <div>
+              <Field
+                label="Duration (in hours)"
+                name="duration"
+                type="number"
+                required
+                placeholder="e.g. 2"
+                min="1"
+                step="1"
+                inputMode="numeric"
+                {...fieldProps}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Enter duration in hours — e.g. enter 2 for 2 hours
+              </p>
+            </div>
           </div>
           <Field
             label="Category"
             name="category"
             required
             placeholder="e.g. Cleaning"
+            {...fieldProps}
           />
           <Field
             label="Availability"
             name="availability"
             placeholder="e.g. Mon–Sat 9am–6pm"
+            {...fieldProps}
           />
+
           <div className="flex gap-3 pt-2">
             <button
               type="button"
@@ -228,7 +270,9 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
   );
 };
 
-// ─── Main Page ─────────────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════
+   ManageServices (main page)
+══════════════════════════════════════════ */
 export default function ManageServices() {
   const { user } = useAuth();
   const [vendorId, setVendorId] = useState(null);
@@ -242,14 +286,12 @@ export default function ManageServices() {
 
   const showToast = (message, type = "success") => setToast({ message, type });
 
-  const fetchServices = useCallback(async (vid) => {
+  const fetchServices = useCallback(async () => {
     try {
-      // Use the /my/list endpoint which is for the logged-in vendor
-      const res = await api.get(`/services/my/list`);
+      const res = await api.get("/services/my/list");
       const data = res.data;
       setServices(Array.isArray(data) ? data : data.services || []);
-    } catch (err) {
-      // Silently handle - approved status check will show UI message
+    } catch {
       setServices([]);
     }
   }, []);
@@ -258,7 +300,6 @@ export default function ManageServices() {
     const init = async () => {
       try {
         setLoading(true);
-        // fetch vendor profile using axios instance
         const res = await api.get("/vendors/profile");
         const profileData = res.data;
         setProfile(profileData);
@@ -278,14 +319,13 @@ export default function ManageServices() {
     const isEdit = modal?.mode === "edit";
     try {
       setActionLoading(true);
-      let res;
       if (isEdit) {
-        res = await api.put(`/services/${modal.service._id}`, {
+        await api.put(`/services/${modal.service._id}`, {
           ...formData,
           vendorId,
         });
       } else {
-        res = await api.post(`/services`, { ...formData, vendorId });
+        await api.post("/services", { ...formData, vendorId });
       }
       showToast(`Service ${isEdit ? "updated" : "added"} successfully!`);
       setModal(null);
@@ -338,6 +378,7 @@ export default function ManageServices() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
             <div className="w-2 h-8 bg-gradient-to-b from-violet-500 to-violet-700 rounded-full" />
@@ -375,7 +416,7 @@ export default function ManageServices() {
           </button>
         </div>
 
-        {/* Approval status banner */}
+        {/* Approval banner */}
         {profile && !profile.isApproved && (
           <div className="mb-6 px-5 py-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
             <svg
@@ -397,6 +438,7 @@ export default function ManageServices() {
           </div>
         )}
 
+        {/* Table card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -427,24 +469,22 @@ export default function ManageServices() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50/80 border-b border-gray-100">
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Service
-                    </th>
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Price
-                    </th>
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Duration
-                    </th>
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                      Availability
-                    </th>
-                    <th className="text-right px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    {[
+                      { label: "Service", align: "left" },
+                      { label: "Category", align: "left" },
+                      { label: "Price", align: "left" },
+                      { label: "Duration", align: "left" },
+                      { label: "Availability", align: "left", hidden: true },
+                      { label: "Actions", align: "right" },
+                    ].map(({ label, align, hidden }) => (
+                      <th
+                        key={label}
+                        className={`px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider text-${align} ${
+                          hidden ? "hidden lg:table-cell" : ""
+                        }`}>
+                        {label}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -452,6 +492,7 @@ export default function ManageServices() {
                     <tr
                       key={service._id}
                       className="hover:bg-violet-50/20 transition-colors duration-100">
+                      {/* Service name */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-100 to-violet-200 flex items-center justify-center text-base flex-shrink-0">
@@ -469,20 +510,28 @@ export default function ManageServices() {
                           </div>
                         </div>
                       </td>
+
+                      {/* Category */}
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-violet-50 text-violet-700 text-xs font-medium">
                           {service.category}
                         </span>
                       </td>
+
+                      {/* Price — ₹ */}
                       <td className="px-6 py-4 font-semibold text-gray-800">
-                        ${Number(service.price).toFixed(2)}
+                        ₹{Number(service.price).toFixed(2)}
                       </td>
+
+                      {/* Duration */}
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center gap-1 text-gray-600 text-xs">
                           <span className="text-base">⏱️</span>
                           {service.duration || "—"}
                         </span>
                       </td>
+
+                      {/* Availability */}
                       <td className="px-6 py-4 text-gray-500 text-xs hidden lg:table-cell">
                         {service.availability ? (
                           <span className="inline-flex items-center gap-1">
@@ -493,6 +542,8 @@ export default function ManageServices() {
                           <span className="text-gray-300">—</span>
                         )}
                       </td>
+
+                      {/* Actions */}
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <button

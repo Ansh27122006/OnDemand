@@ -232,7 +232,7 @@ const ManageOrders = () => {
                 />
               </svg>
               <span className="text-sm font-bold text-blue-700">
-                $
+                ₹
                 {orders
                   .filter((o) => o.status?.toLowerCase() === "delivered")
                   .reduce(

@@ -278,12 +278,12 @@ const ProductDetail = () => {
             {/* Price */}
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-black text-blue-600">
-                ${parseFloat(product.price || 0).toFixed(2)}
+                ₹{parseFloat(product.price || 0).toFixed(2)}
               </span>
               {product.originalPrice &&
                 product.originalPrice > product.price && (
                   <span className="text-lg text-slate-400 line-through font-medium">
-                    ${parseFloat(product.originalPrice).toFixed(2)}
+                    ₹{parseFloat(product.originalPrice).toFixed(2)}
                   </span>
                 )}
             </div>

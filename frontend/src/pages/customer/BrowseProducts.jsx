@@ -42,7 +42,7 @@ const ProductCard = ({ product }) => {
 
         <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
           <span className="text-lg font-black text-blue-600">
-            ${parseFloat(product.price || 0).toFixed(2)}
+            ₹{parseFloat(product.price || 0).toFixed(2)}
           </span>
           <Link
             to={`/products/${product._id}`}

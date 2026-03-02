@@ -2,11 +2,55 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 
+/* ══════════════════════════════════════════
+   Field — defined at module level so React
+   never treats it as a new component type
+   between renders. This prevents focus loss.
+══════════════════════════════════════════ */
+const Field = ({
+  label,
+  name,
+  type = "text",
+  required,
+  placeholder,
+  as: Tag = "input",
+  form,
+  errors,
+  onChange,
+  ...rest
+}) => (
+  <div>
+    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+      {label} {required && <span className="text-red-400">*</span>}
+    </label>
+    <Tag
+      name={name}
+      type={type}
+      value={form[name]}
+      onChange={onChange}
+      placeholder={placeholder}
+      className={`w-full px-4 py-2.5 rounded-xl border text-sm bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-violet-500/30 ${
+        errors[name]
+          ? "border-red-300"
+          : "border-gray-200 focus:border-violet-400"
+      } ${Tag === "textarea" ? "resize-none h-24" : ""}`}
+      {...rest}
+    />
+    {errors[name] && (
+      <p className="text-red-500 text-xs mt-1">{errors[name]}</p>
+    )}
+  </div>
+);
+
+/* ══════════════════════════════════════════
+   Toast
+══════════════════════════════════════════ */
 const Toast = ({ message, type, onClose }) => {
   useEffect(() => {
     const t = setTimeout(onClose, 3500);
     return () => clearTimeout(t);
   }, [onClose]);
+
   return (
     <div
       className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg text-sm font-medium ${
@@ -25,6 +69,9 @@ const Toast = ({ message, type, onClose }) => {
   );
 };
 
+/* ══════════════════════════════════════════
+   ConfirmDialog
+══════════════════════════════════════════ */
 const ConfirmDialog = ({ itemName, onConfirm, onCancel }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
     <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center border border-gray-100">
@@ -53,6 +100,9 @@ const ConfirmDialog = ({ itemName, onConfirm, onCancel }) => (
   </div>
 );
 
+/* ══════════════════════════════════════════
+   ProductModal — also at module level
+══════════════════════════════════════════ */
 const EMPTY_FORM = {
   name: "",
   description: "",
@@ -80,18 +130,26 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = "Product name is required";
-    if (form.price === "" || isNaN(form.price) || Number(form.price) < 0)
+    if (
+      form.price === "" ||
+      isNaN(Number(form.price)) ||
+      Number(form.price) < 0
+    )
       e.price = "Valid price is required";
     if (!form.category.trim()) e.category = "Category is required";
-    if (form.stock === "" || isNaN(form.stock) || Number(form.stock) < 0)
-      e.stock = "Valid stock is required";
+    if (
+      form.stock === "" ||
+      isNaN(Number(form.stock)) ||
+      Number(form.stock) < 0
+    )
+      e.stock = "Valid stock quantity is required";
     return e;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
-    if (errors[name]) setErrors((p) => ({ ...p, [name]: undefined }));
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
   const handleSubmit = (e) => {
@@ -101,8 +159,7 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
       setErrors(errs);
       return;
     }
-
-    const payload = {
+    onSubmit({
       name: form.name,
       description: form.description,
       price: Number(form.price),
@@ -114,46 +171,16 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
             .map((s) => s.trim())
             .filter(Boolean)
         : [],
-    };
-
-    onSubmit(payload);
+    });
   };
 
-  const Field = ({
-    label,
-    name,
-    type = "text",
-    required,
-    placeholder,
-    as: Tag = "input",
-    ...rest
-  }) => (
-    <div>
-      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-        {label} {required && <span className="text-red-400">*</span>}
-      </label>
-      <Tag
-        name={name}
-        type={type}
-        value={form[name]}
-        onChange={handleChange}
-        placeholder={placeholder}
-        className={`w-full px-4 py-2.5 rounded-xl border text-sm bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-violet-500/30 ${
-          errors[name]
-            ? "border-red-300"
-            : "border-gray-200 focus:border-violet-400"
-        } ${Tag === "textarea" ? "resize-none h-24" : ""}`}
-        {...rest}
-      />
-      {errors[name] && (
-        <p className="text-red-500 text-xs mt-1">{errors[name]}</p>
-      )}
-    </div>
-  );
+  /* Shared props passed down to Field */
+  const fieldProps = { form, errors, onChange: handleChange };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100 overflow-hidden">
+        {/* Header */}
         <div className="px-6 py-5 flex items-center justify-between bg-gradient-to-r from-violet-600 to-violet-700">
           <div>
             <h2 className="text-lg font-bold text-white">
@@ -171,6 +198,8 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
             ✕
           </button>
         </div>
+
+        {/* Form */}
         <form
           onSubmit={handleSubmit}
           className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
@@ -179,22 +208,28 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
             name="name"
             required
             placeholder="e.g. Wireless Headphones"
+            {...fieldProps}
           />
           <Field
             label="Description"
             name="description"
             as="textarea"
             placeholder="Describe your product…"
+            {...fieldProps}
           />
           <div className="grid grid-cols-2 gap-4">
+            {/* Price — inputMode="decimal" lets mobile keyboards show decimals;
+                no maxLength so any number can be typed */}
             <Field
-              label="Price ($)"
+              label="Price (₹)"
               name="price"
               type="number"
               required
               placeholder="0.00"
               min="0"
-              step="0.01"
+              step="any"
+              inputMode="decimal"
+              {...fieldProps}
             />
             <Field
               label="Stock"
@@ -204,6 +239,7 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
               placeholder="0"
               min="0"
               step="1"
+              {...fieldProps}
             />
           </div>
           <Field
@@ -211,12 +247,15 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
             name="category"
             required
             placeholder="e.g. Electronics"
+            {...fieldProps}
           />
           <Field
-            label="Images (comma separated URLs)"
+            label="Images (comma-separated URLs)"
             name="images"
             placeholder="https://..., https://..."
+            {...fieldProps}
           />
+
           <div className="flex gap-3 pt-2">
             <button
               type="button"
@@ -230,7 +269,7 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
               className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 text-white font-semibold text-sm hover:bg-violet-700 disabled:opacity-60 flex items-center justify-center gap-2">
               {loading && (
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              )}{" "}
+              )}
               {editProduct ? "Save Changes" : "Add Product"}
             </button>
           </div>
@@ -240,6 +279,9 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
   );
 };
 
+/* ══════════════════════════════════════════
+   ManageProducts (main page)
+══════════════════════════════════════════ */
 export default function ManageProducts() {
   const { user } = useAuth();
   const [vendorId, setVendorId] = useState(null);
@@ -253,14 +295,12 @@ export default function ManageProducts() {
 
   const showToast = (message, type = "success") => setToast({ message, type });
 
-  const fetchProducts = useCallback(async (vid) => {
+  const fetchProducts = useCallback(async () => {
     try {
-      // Use the /my/list endpoint which is for the logged-in vendor
-      const res = await api.get(`/products/my/list`);
+      const res = await api.get("/products/my/list");
       const data = res.data;
       setProducts(Array.isArray(data) ? data : data.products || []);
-    } catch (err) {
-      // Silently handle - approved status check will show UI message
+    } catch {
       setProducts([]);
     }
   }, []);
@@ -270,9 +310,9 @@ export default function ManageProducts() {
       try {
         setLoading(true);
         const res = await api.get("/vendors/profile");
-        const profile = res.data;
-        setProfile(profile);
-        const vid = profile.vendorId || profile._id;
+        const prof = res.data;
+        setProfile(prof);
+        const vid = prof.vendorId || prof._id;
         setVendorId(vid);
         await fetchProducts();
       } catch (err) {
@@ -294,7 +334,7 @@ export default function ManageProducts() {
           vendorId,
         });
       } else {
-        await api.post(`/products`, { ...formData, vendorId });
+        await api.post("/products", { ...formData, vendorId });
       }
       showToast(`Product ${isEdit ? "updated" : "added"} successfully!`);
       setModal(null);
@@ -347,6 +387,7 @@ export default function ManageProducts() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
             <div className="w-2 h-8 bg-gradient-to-b from-violet-500 to-violet-700 rounded-full" />
@@ -384,7 +425,7 @@ export default function ManageProducts() {
           </button>
         </div>
 
-        {/* Approval status banner */}
+        {/* Approval banner */}
         {profile && !profile.isApproved && (
           <div className="mb-6 px-5 py-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
             <svg
@@ -406,6 +447,7 @@ export default function ManageProducts() {
           </div>
         )}
 
+        {/* Table card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -436,21 +478,17 @@ export default function ManageProducts() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50/80 border-b border-gray-100">
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Product
-                    </th>
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Price
-                    </th>
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Stock
-                    </th>
-                    <th className="text-right px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    {["Product", "Category", "Price", "Stock", "Actions"].map(
+                      (h) => (
+                        <th
+                          key={h}
+                          className={`px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider ${
+                            h === "Actions" ? "text-right" : "text-left"
+                          }`}>
+                          {h}
+                        </th>
+                      )
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -458,6 +496,7 @@ export default function ManageProducts() {
                     <tr
                       key={product._id}
                       className="hover:bg-violet-50/20 transition-colors">
+                      {/* Product */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-100 to-violet-200 flex items-center justify-center text-base flex-shrink-0">
@@ -475,20 +514,28 @@ export default function ManageProducts() {
                           </div>
                         </div>
                       </td>
+
+                      {/* Category */}
                       <td className="px-6 py-4">
                         <span className="px-2.5 py-1 rounded-lg bg-violet-50 text-violet-700 text-xs font-medium">
                           {product.category}
                         </span>
                       </td>
+
+                      {/* Price — ₹ */}
                       <td className="px-6 py-4 font-semibold text-gray-800">
-                        ${Number(product.price).toFixed(2)}
+                        ₹{Number(product.price).toFixed(2)}
                       </td>
+
+                      {/* Stock */}
                       <td className="px-6 py-4 text-gray-500 text-xs">
                         <span className="inline-flex items-center gap-1">
                           <span className="text-base">📊</span>
                           {product.stock ?? "—"} units
                         </span>
                       </td>
+
+                      {/* Actions */}
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -510,6 +557,7 @@ export default function ManageProducts() {
             </div>
           )}
         </div>
+
         {!loading && products.length > 0 && (
           <p className="text-center text-xs text-gray-400 mt-4">
             Showing {products.length} product{products.length !== 1 ? "s" : ""}

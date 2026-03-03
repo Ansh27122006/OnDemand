@@ -1,6 +1,7 @@
 import { Routes, Route, useLocation } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoutes";
 import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 
 // Auth pages
 import Login from "./pages/auth/Login";
@@ -139,6 +140,7 @@ const App = () => {
           element={<AdminManageProducts />}
         />
       </Routes>
+      <Footer />
     </>
   );
 };

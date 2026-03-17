@@ -54,7 +54,7 @@ const Login = () => {
         {/* Logo / Brand */}
         <div className="text-center mb-10">
           <span className="inline-block text-3xl font-black tracking-tight text-white">
-            Vendor<span className="text-amber-400">Link</span>
+            On<span className="text-amber-400">Demand</span>
           </span>
           <p className="mt-2 text-zinc-400 text-sm tracking-wide uppercase">
             Sign in to your account

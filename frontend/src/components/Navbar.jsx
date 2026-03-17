@@ -19,6 +19,7 @@ const navConfig = {
   vendor: {
     links: [{ label: "My Dashboard", to: "/vendor/dashboard" }],
     dropdown: [
+      { label: "My Store", to: "/vendor/profile" },
       { label: "Manage Products", to: "/vendor/products" },
       { label: "Manage Services", to: "/vendor/services" },
       { label: "Manage Orders", to: "/vendor/orders" },

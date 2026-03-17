@@ -4,6 +4,7 @@ const {
   registerUser,
   loginUser,
   getMe,
+  updateProfile,
 } = require("../controllers/authController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -147,5 +148,5 @@ router.post("/login", loginUser);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get("/me", protect, getMe);
-
+router.put("/profile", protect, updateProfile);
 module.exports = router;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
+import CATEGORIES from "../../constants/categories";
 
 /* ── Placeholder image ── */
 const PLACEHOLDER = "https://placehold.co/400x300?text=No+Image";
@@ -123,12 +124,6 @@ const BrowseProducts = () => {
     fetchProducts();
   }, []);
 
-  // Derive unique categories from fetched products
-  const categories = useMemo(() => {
-    const cats = products.map((p) => p.category).filter(Boolean);
-    return [...new Set(cats)].sort();
-  }, [products]);
-
   // Filter products by search + category
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -217,7 +212,7 @@ const BrowseProducts = () => {
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="sm:w-52 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-sm appearance-none cursor-pointer">
             <option value="">All Categories</option>
-            {categories.map((cat) => (
+            {CATEGORIES.map((cat) => (
               <option
                 key={cat}
                 value={cat}>

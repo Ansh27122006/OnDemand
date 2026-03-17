@@ -27,6 +27,7 @@ import ManageProducts from "./pages/vendor/ManageProducts";
 import ManageServices from "./pages/vendor/ManageServices";
 import ManageOrders from "./pages/vendor/ManageOrders";
 import ManageBookings from "./pages/vendor/ManageBookings";
+import VendorProfile from "./pages/vendor/VendorProfile";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -117,6 +118,10 @@ const App = () => {
           <Route
             path="/vendor/bookings"
             element={<ManageBookings />}
+          />
+          <Route
+            path="/vendor/profile"
+            element={<VendorProfile />}
           />
         </Route>
 

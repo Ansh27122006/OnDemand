@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
+import CATEGORIES from "../../constants/categories";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ const Register = () => {
         {/* Logo / Brand */}
         <div className="text-center mb-10">
           <span className="inline-block text-3xl font-black tracking-tight text-white">
-            Vendor<span className="text-amber-400">Link</span>
+            On<span className="text-amber-400">Demand</span>
           </span>
           <p className="mt-2 text-zinc-400 text-sm tracking-wide uppercase">
             Create your account
@@ -215,16 +216,22 @@ const Register = () => {
                     className="block text-sm font-medium text-zinc-300 mb-1.5">
                     Business Category
                   </label>
-                  <input
+                  <select
                     id="category"
                     name="category"
-                    type="text"
                     required
                     value={formData.category}
                     onChange={handleChange}
-                    placeholder="e.g., Electronics, Clothing, Services"
-                    className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition"
-                  />
+                    className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition appearance-none cursor-pointer">
+                    <option value="">Select a category</option>
+                    {CATEGORIES.map((cat) => (
+                      <option
+                        key={cat}
+                        value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Description */}

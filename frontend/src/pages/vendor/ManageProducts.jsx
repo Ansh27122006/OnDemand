@@ -242,13 +242,41 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
               {...fieldProps}
             />
           </div>
-          <Field
-            label="Category"
-            name="category"
-            required
-            placeholder="e.g. Electronics"
-            {...fieldProps}
-          />
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              Category <span className="text-red-400">*</span>
+            </label>
+            <select
+              name="category"
+              value={form.category}
+              onChange={handleChange}
+              className={`w-full px-4 py-2.5 rounded-xl border text-sm bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-violet-500/30 ${
+                errors.category
+                  ? "border-red-300"
+                  : "border-gray-200 focus:border-violet-400"
+              }`}>
+              <option value="">Select a category</option>
+              {[
+                "Electronics",
+                "Food & Beverages",
+                "Home Services",
+                "Fashion",
+                "Health & Beauty",
+                "Education",
+                "Repair & Maintenance",
+                "Other",
+              ].map((cat) => (
+                <option
+                  key={cat}
+                  value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+            {errors.category && (
+              <p className="text-red-500 text-xs mt-1">{errors.category}</p>
+            )}
+          </div>
           <Field
             label="Images (comma-separated URLs)"
             name="images"

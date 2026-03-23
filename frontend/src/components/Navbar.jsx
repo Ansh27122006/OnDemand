@@ -14,6 +14,7 @@ const navConfig = {
     dropdown: [
       { label: "My Orders", to: "/customer/orders" },
       { label: "My Bookings", to: "/customer/bookings" },
+      { label: "Edit Profile", to: "/profile/edit" },
     ],
   },
   vendor: {
@@ -24,6 +25,7 @@ const navConfig = {
       { label: "Manage Services", to: "/vendor/services" },
       { label: "Manage Orders", to: "/vendor/orders" },
       { label: "Manage Bookings", to: "/vendor/bookings" },
+      { label: "Edit Profile", to: "/profile/edit" },
     ],
   },
   admin: {
@@ -32,6 +34,7 @@ const navConfig = {
       { label: "Dashboard", to: "/admin/dashboard" },
       { label: "Manage Vendors", to: "/admin/vendors" },
       { label: "Manage Users", to: "/admin/users" },
+      { label: "Edit Profile", to: "/profile/edit" },
     ],
   },
 };

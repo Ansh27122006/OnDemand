@@ -10,6 +10,7 @@ import Unauthorized from "./pages/auth/Unauthorized";
 
 // Public pages
 import LandingPage from "./pages/LandingPage";
+import EditProfile from "./pages/EditProfile";
 import BrowseProducts from "./pages/customer/BrowseProducts";
 import BrowseServices from "./pages/customer/BrowseServices";
 import ProductDetail from "./pages/customer/ProductDetail";
@@ -76,7 +77,16 @@ const App = () => {
           path="/services/:id"
           element={<ServiceDetail />}
         />
-
+        {/* ── Protected Routes (Customer, Vendor, Admin) ── */}
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={["customer", "vendor", "admin"]} />
+          }>
+          <Route
+            path="/profile/edit"
+            element={<EditProfile />}
+          />
+        </Route>
         {/* ── Customer Only ── */}
         <Route element={<ProtectedRoute allowedRoles={["customer"]} />}>
           <Route

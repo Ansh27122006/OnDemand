@@ -11,6 +11,7 @@ const {
   updateService,
   deleteService,
 } = require("../controllers/serviceController.js");
+const { upload } = require("../config/cloudinary.js");
 
 /**
  * @swagger
@@ -75,7 +76,13 @@ const {
  *       403:
  *         description: Forbidden - Only vendors can create services
  */
-router.post("/", protect, authorizeRoles("vendor"), addService);
+router.post(
+  "/",
+  protect,
+  authorizeRoles("vendor"),
+  upload.single("image"),
+  addService
+);
 
 /**
  * @swagger
@@ -326,7 +333,13 @@ router.get("/:id", getServiceById);
  *       500:
  *         description: Server error
  */
-router.put("/:id", protect, authorizeRoles("vendor"), updateService);
+router.put(
+  "/:id",
+  protect,
+  authorizeRoles("vendor"),
+  upload.single("image"),
+  updateService
+);
 
 /**
  * @swagger

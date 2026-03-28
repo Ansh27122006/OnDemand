@@ -12,7 +12,6 @@ const addService = async (req, res) => {
       return res.status(404).json({ message: "Vendor profile not found" });
     }
 
-    // Check if vendor is approved
     if (!vendorProfile.isApproved) {
       return res.status(403).json({
         message:
@@ -30,6 +29,14 @@ const addService = async (req, res) => {
       images,
     } = req.body;
 
+    const serviceImages = req.file
+      ? [req.file.path]
+      : images
+      ? Array.isArray(images)
+        ? images
+        : [images]
+      : [];
+
     const service = new Service({
       vendorId: vendorProfile._id,
       name,
@@ -38,11 +45,10 @@ const addService = async (req, res) => {
       category,
       duration,
       availability,
-      images,
+      images: serviceImages,
     });
 
     const savedService = await service.save();
-
     res.status(201).json(savedService);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -58,13 +64,8 @@ const getAllServices = async (req, res) => {
 
     const filter = {};
 
-    if (category) {
-      filter.category = category;
-    }
-
-    if (search) {
-      filter.name = { $regex: search, $options: "i" };
-    }
+    if (category) filter.category = category;
+    if (search) filter.name = { $regex: search, $options: "i" };
 
     if (minPrice !== undefined || maxPrice !== undefined) {
       filter.price = {};
@@ -78,7 +79,6 @@ const getAllServices = async (req, res) => {
     });
 
     const approvedServices = services.filter((s) => s.vendorId !== null);
-
     res.status(200).json(approvedServices);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -144,8 +144,12 @@ const updateService = async (req, res) => {
       }
     });
 
-    const updatedService = await service.save();
+    // if a new file was uploaded, override images with it
+    if (req.file) {
+      service.images = [req.file.path];
+    }
 
+    const updatedService = await service.save();
     res.status(200).json(updatedService);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -176,14 +180,13 @@ const deleteService = async (req, res) => {
     }
 
     await service.deleteOne();
-
     res.status(200).json({ message: "Service deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
-// @desc    Get all services for the logged-in vendor (their own services)
+// @desc    Get all services for the logged-in vendor
 // @route   GET /api/services/my/list
 // @access  Vendor only
 const getMyServices = async (req, res) => {
@@ -195,7 +198,6 @@ const getMyServices = async (req, res) => {
     }
 
     const services = await Service.find({ vendorId: vendorProfile._id });
-
     res.status(200).json(services);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -215,8 +217,6 @@ const getServicesByVendor = async (req, res) => {
       return res.status(404).json({ message: "Vendor not found" });
     }
 
-    // Allow vendor to view their own services regardless of approval status (for management)
-    // For public access, only show approved vendors' services
     const isOwnVendor =
       req.user && vendorExists.userId.toString() === req.user._id.toString();
 
@@ -225,7 +225,6 @@ const getServicesByVendor = async (req, res) => {
     }
 
     const services = await Service.find({ vendorId });
-
     res.status(200).json(services);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

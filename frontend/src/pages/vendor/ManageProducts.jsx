@@ -2,11 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 
-/* ══════════════════════════════════════════
-   Field — defined at module level so React
-   never treats it as a new component type
-   between renders. This prevents focus loss.
-══════════════════════════════════════════ */
 const Field = ({
   label,
   name,
@@ -101,7 +96,7 @@ const ConfirmDialog = ({ itemName, onConfirm, onCancel }) => (
 );
 
 /* ══════════════════════════════════════════
-   ProductModal — also at module level
+   ProductModal
 ══════════════════════════════════════════ */
 const EMPTY_FORM = {
   name: "",
@@ -109,7 +104,6 @@ const EMPTY_FORM = {
   price: "",
   category: "",
   stock: "",
-  images: "",
 };
 
 const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
@@ -121,11 +115,16 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
           price: editProduct.price ?? "",
           category: editProduct.category || "",
           stock: editProduct.stock ?? "",
-          images: (editProduct.images || []).join(", "),
         }
       : EMPTY_FORM
   );
   const [errors, setErrors] = useState({});
+
+  // ── ADDED: image file and preview state
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(
+    editProduct?.images?.[0] || null
+  );
 
   const validate = () => {
     const e = {};
@@ -152,6 +151,20 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
+  // ── ADDED: handle image file selection and preview
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  // ── ADDED: clear selected image
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(editProduct?.images?.[0] || null);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const errs = validate();
@@ -159,22 +172,19 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
       setErrors(errs);
       return;
     }
-    onSubmit({
-      name: form.name,
-      description: form.description,
-      price: Number(form.price),
-      category: form.category,
-      stock: Number(form.stock),
-      images: form.images
-        ? form.images
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [],
-    });
+    // ── CHANGED: pass imageFile as second argument
+    onSubmit(
+      {
+        name: form.name,
+        description: form.description,
+        price: Number(form.price),
+        category: form.category,
+        stock: Number(form.stock),
+      },
+      imageFile
+    );
   };
 
-  /* Shared props passed down to Field */
   const fieldProps = { form, errors, onChange: handleChange };
 
   return (
@@ -218,8 +228,6 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
             {...fieldProps}
           />
           <div className="grid grid-cols-2 gap-4">
-            {/* Price — inputMode="decimal" lets mobile keyboards show decimals;
-                no maxLength so any number can be typed */}
             <Field
               label="Price (₹)"
               name="price"
@@ -242,6 +250,8 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
               {...fieldProps}
             />
           </div>
+
+          {/* Category */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
               Category <span className="text-red-400">*</span>
@@ -257,13 +267,30 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
               }`}>
               <option value="">Select a category</option>
               {[
-                "Electronics",
+                "Electronics & Gadgets",
                 "Food & Beverages",
                 "Home Services",
-                "Fashion",
+                "Fashion & Clothing",
                 "Health & Beauty",
-                "Education",
+                "Education & Training",
                 "Repair & Maintenance",
+                "IT & Technology",
+                "Healthcare & Medical",
+                "Transportation & Logistics",
+                "Construction & Real Estate",
+                "Financial Services",
+                "Events & Entertainment",
+                "Marketing & Advertising",
+                "Cleaning Services",
+                "Security Services",
+                "Legal Services",
+                "Photography & Media",
+                "Sports & Fitness",
+                "Automotive",
+                "Pet Services",
+                "Rental Services",
+                "Agriculture",
+                "Childcare & Senior Care",
                 "Other",
               ].map((cat) => (
                 <option
@@ -277,12 +304,58 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
               <p className="text-red-500 text-xs mt-1">{errors.category}</p>
             )}
           </div>
-          <Field
-            label="Images (comma-separated URLs)"
-            name="images"
-            placeholder="https://..., https://..."
-            {...fieldProps}
-          />
+
+          {/* ── ADDED: Image Upload Field ── */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              Product Image
+            </label>
+
+            {/* Preview */}
+            {imagePreview && (
+              <div className="relative mb-2 w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute top-2 right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow">
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* File input */}
+            <label className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border border-dashed border-gray-300 hover:border-violet-400 bg-gray-50 hover:bg-violet-50/30 cursor-pointer transition-colors">
+              <svg
+                className="w-4 h-4 text-gray-400 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+                />
+              </svg>
+              <span className="text-sm text-gray-400">
+                {imageFile ? imageFile.name : "Click to upload an image"}
+              </span>
+              <input
+                type="file"
+                accept="image/jpg,image/jpeg,image/png,image/webp"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+            </label>
+            <p className="text-xs text-gray-400 mt-1">
+              JPG, PNG or WebP. Max 5MB.
+            </p>
+          </div>
 
           <div className="flex gap-3 pt-2">
             <button
@@ -352,18 +425,31 @@ export default function ManageProducts() {
     init();
   }, [fetchProducts]);
 
-  const handleSubmit = async (formData) => {
+  // ── CHANGED: accept imageFile as second argument and use FormData
+  const handleSubmit = async (formFields, imageFile) => {
     const isEdit = modal?.mode === "edit";
     try {
       setActionLoading(true);
+
+      const formData = new FormData();
+      formData.append("name", formFields.name);
+      formData.append("description", formFields.description);
+      formData.append("price", formFields.price);
+      formData.append("category", formFields.category);
+      formData.append("stock", formFields.stock);
+      formData.append("vendorId", vendorId);
+      if (imageFile) formData.append("image", imageFile);
+
       if (isEdit) {
-        await api.put(`/products/${modal.product._id}`, {
-          ...formData,
-          vendorId,
+        await api.put(`/products/${modal.product._id}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
       } else {
-        await api.post("/products", { ...formData, vendorId });
+        await api.post("/products", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
       }
+
       showToast(`Product ${isEdit ? "updated" : "added"} successfully!`);
       setModal(null);
       await fetchProducts();
@@ -527,9 +613,18 @@ export default function ManageProducts() {
                       {/* Product */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-100 to-violet-200 flex items-center justify-center text-base flex-shrink-0">
-                            📦
-                          </div>
+                          {/* ── CHANGED: show product image thumbnail if available */}
+                          {product.images?.[0] ? (
+                            <img
+                              src={product.images[0]}
+                              alt={product.name}
+                              className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-100 to-violet-200 flex items-center justify-center text-base flex-shrink-0">
+                              📦
+                            </div>
+                          )}
                           <div>
                             <p className="font-semibold text-gray-800">
                               {product.name}
@@ -550,7 +645,7 @@ export default function ManageProducts() {
                         </span>
                       </td>
 
-                      {/* Price — ₹ */}
+                      {/* Price */}
                       <td className="px-6 py-4 font-semibold text-gray-800">
                         ₹{Number(product.price).toFixed(2)}
                       </td>

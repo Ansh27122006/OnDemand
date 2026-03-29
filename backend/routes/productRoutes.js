@@ -11,6 +11,7 @@ const {
   updateProduct,
   deleteProduct,
 } = require("../controllers/productController.js");
+const { upload } = require("../config/cloudinary.js");
 
 /**
  * @swagger
@@ -84,7 +85,13 @@ const {
  *       403:
  *         description: Forbidden - Only vendors can create products
  */
-router.post("/", protect, authorizeRoles("vendor"), addProduct);
+router.post(
+  "/",
+  protect,
+  authorizeRoles("vendor"),
+  upload.single("image"),
+  addProduct
+);
 
 /**
  * @swagger
@@ -377,7 +384,13 @@ router.get("/:id", getProductById);
  *       500:
  *         description: Server error
  */
-router.put("/:id", protect, authorizeRoles("vendor"), updateProduct);
+router.put(
+  "/:id",
+  protect,
+  authorizeRoles("vendor"),
+  upload.single("image"),
+  updateProduct
+);
 
 /**
  * @swagger

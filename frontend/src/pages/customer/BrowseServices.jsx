@@ -2,22 +2,32 @@ import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import CATEGORIES from "../../constants/categories";
+const PLACEHOLDER = "https://placehold.co/400x300?text=No+Image";
 
 /* ── Service Card ── */
 const ServiceCard = ({ service }) => {
+  const image = service.images?.[0] || service.image || PLACEHOLDER;
   return (
     <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
-      {/* Card Header */}
-      <div className="relative h-10 bg-gradient-to-r from-blue-600 to-blue-500">
+      {/* Card Header — image with category badge overlay */}
+      <div className="relative h-48 bg-slate-100 overflow-hidden">
+        <img
+          src={image}
+          alt={service.name}
+          onError={(e) => {
+            e.target.src = PLACEHOLDER;
+          }}
+          className="w-full h-full object-cover"
+        />
         {service.category && (
-          <span className="absolute bottom-0 translate-y-1/2 left-4 px-2.5 py-1 bg-white text-blue-600 text-xs font-semibold rounded-full border border-blue-100 shadow-sm">
+          <span className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 backdrop-blur-sm text-blue-600 text-xs font-semibold rounded-full border border-blue-100 shadow-sm">
             {service.category}
           </span>
         )}
       </div>
 
       {/* Content */}
-      <div className="p-5 pt-7 flex flex-col flex-1">
+      <div className="p-5 flex flex-col flex-1">
         <h3 className="text-sm font-bold text-slate-800 leading-snug line-clamp-2 mb-1">
           {service.name}
         </h3>

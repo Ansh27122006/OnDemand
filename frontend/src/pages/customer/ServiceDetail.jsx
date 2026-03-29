@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../../api/axios";
+const PLACEHOLDER = "https://placehold.co/600x400?text=No+Image";
 
 /* ── Toast Notification ── */
 const Toast = ({ message, type = "success", onClose }) => (
@@ -290,8 +291,25 @@ const ServiceDetail = () => {
           <div className="flex flex-col gap-5">
             {/* Header card */}
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-              {/* Decorative top strip */}
-              <div className="h-3 bg-gradient-to-r from-blue-600 to-blue-400" />
+              {/* Service image */}
+              {(() => {
+                const image =
+                  service.images?.[0] || service.image || PLACEHOLDER;
+                return (
+                  <div className="relative h-56 bg-slate-100 overflow-hidden">
+                    <img
+                      src={image}
+                      alt={service.name}
+                      onError={(e) => {
+                        e.target.src = PLACEHOLDER;
+                      }}
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Thin blue accent at bottom */}
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-blue-400" />
+                  </div>
+                );
+              })()}
               <div className="p-6 flex flex-col gap-4">
                 {/* Category badge */}
                 {service.category && (

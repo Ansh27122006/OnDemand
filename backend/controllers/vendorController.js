@@ -7,7 +7,6 @@ const createVendorProfile = async (req, res) => {
   try {
     const { storeName, description, category, logo } = req.body;
 
-    // Prevent duplicate profiles for the same user
     const existing = await VendorProfile.findOne({ userId: req.user._id });
     if (existing) {
       return res
@@ -15,12 +14,15 @@ const createVendorProfile = async (req, res) => {
         .json({ message: "Vendor profile already exists for this user" });
     }
 
+    // use uploaded file URL if present, else body logo, else undefined
+    const logoUrl = req.file ? req.file.secure_url : logo || undefined;
+
     const profile = await VendorProfile.create({
       userId: req.user._id,
       storeName,
       description,
       category,
-      logo,
+      logo: logoUrl,
     });
 
     res.status(201).json({ profile });
@@ -60,7 +62,6 @@ const updateVendorProfile = async (req, res) => {
       return res.status(404).json({ message: "Vendor profile not found" });
     }
 
-    // Only the owning vendor or an admin can update
     const isOwner = profile.userId.toString() === req.user._id.toString();
     const isAdmin = req.user.role === "admin";
 
@@ -71,8 +72,6 @@ const updateVendorProfile = async (req, res) => {
     }
 
     const allowedFields = ["storeName", "description", "category", "logo"];
-
-    // Admins can also update isApproved
     if (isAdmin) allowedFields.push("isApproved");
 
     allowedFields.forEach((field) => {
@@ -81,8 +80,12 @@ const updateVendorProfile = async (req, res) => {
       }
     });
 
-    const updatedProfile = await profile.save();
+    // if a new file was uploaded, override logo with it
+    if (req.file) {
+      profile.logo = req.file.secure_url;
+    }
 
+    const updatedProfile = await profile.save();
     res.status(200).json({ profile: updatedProfile });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

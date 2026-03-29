@@ -15,7 +15,7 @@ const createVendorProfile = async (req, res) => {
     }
 
     // use uploaded file URL if present, else body logo, else undefined
-    const logoUrl = req.file ? req.file.path : logo || undefined;
+    const logoUrl = req.file ? req.file.secure_url : logo || undefined;
 
     const profile = await VendorProfile.create({
       userId: req.user._id,
@@ -82,7 +82,7 @@ const updateVendorProfile = async (req, res) => {
 
     // if a new file was uploaded, override logo with it
     if (req.file) {
-      profile.logo = req.file.path;
+      profile.logo = req.file.secure_url;
     }
 
     const updatedProfile = await profile.save();

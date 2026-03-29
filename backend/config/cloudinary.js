@@ -1,8 +1,8 @@
-const cloudinary = require("cloudinary").v2;
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("cloudinary");
+const CloudinaryStorage = require("multer-storage-cloudinary");
 const multer = require("multer");
 
-cloudinary.config({
+cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
@@ -11,12 +11,11 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: "ondemand", // all images go in this folder on Cloudinary
+    folder: "ondemand",
     allowed_formats: ["jpg", "jpeg", "png", "webp"],
-    transformation: [{ width: 800, height: 600, crop: "limit" }], // auto resize
+    transformation: [{ width: 800, height: 600, crop: "limit" }],
   },
 });
 
 const upload = multer({ storage });
-
 module.exports = { cloudinary, upload };

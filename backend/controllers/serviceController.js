@@ -30,7 +30,7 @@ const addService = async (req, res) => {
     } = req.body;
 
     const serviceImages = req.file
-      ? [req.file.path]
+      ? [req.file.secure_url]
       : images
       ? Array.isArray(images)
         ? images
@@ -146,7 +146,7 @@ const updateService = async (req, res) => {
 
     // if a new file was uploaded, override images with it
     if (req.file) {
-      service.images = [req.file.path];
+      service.images = [req.file.secure_url];
     }
 
     const updatedService = await service.save();

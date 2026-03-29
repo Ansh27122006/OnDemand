@@ -3,6 +3,8 @@ dns.setServers(["8.8.8.8", "8.8.4.4"]);
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+// Load environment variables
+dotenv.config();
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const vendorRoutes = require("./routes/vendorRoutes");
@@ -14,9 +16,6 @@ const cartRoutes = require("./routes/cartRoutes.js");
 const orderRoutes = require("./routes/orderRoutes.js");
 const bookingRoutes = require("./routes/bookingRoutes.js");
 const adminRoutes = require("./routes/adminRoutes.js");
-
-// Load environment variables
-dotenv.config();
 
 // Connect to MongoDB
 connectDB();

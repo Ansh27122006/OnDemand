@@ -23,7 +23,7 @@ const addProduct = async (req, res) => {
 
     // ── CHANGED: use uploaded file URL if present, else body images, else []
     const productImages = req.file
-      ? [req.file.path]
+      ? [req.file.secure_url]
       : images
       ? Array.isArray(images)
         ? images
@@ -136,9 +136,8 @@ const updateProduct = async (req, res) => {
       }
     });
 
-    // ── CHANGED: if a new file was uploaded, override images with it
     if (req.file) {
-      product.images = [req.file.path];
+      product.images = [req.file.secure_url];
     }
 
     const updatedProduct = await product.save();

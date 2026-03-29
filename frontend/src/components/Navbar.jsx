@@ -34,6 +34,7 @@ const navConfig = {
       { label: "Dashboard", to: "/admin/dashboard" },
       { label: "Manage Vendors", to: "/admin/vendors" },
       { label: "Manage Users", to: "/admin/users" },
+      { label: "Manage Products", to: "/admin/products" },
       { label: "Edit Profile", to: "/profile/edit" },
     ],
   },

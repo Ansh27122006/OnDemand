@@ -35,6 +35,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageVendors from "./pages/admin/ManageVendors";
 import ManageUsers from "./pages/admin/ManageUsers";
 import AdminManageProducts from "./pages/admin/AdminManageProducts";
+import AdminManageServices from "./pages/admin/AdminManageServices";
 
 const App = () => {
   const location = useLocation();
@@ -153,6 +154,10 @@ const App = () => {
         <Route
           path="/admin/products"
           element={<AdminManageProducts />}
+        />
+        <Route
+          path="/admin/services"
+          element={<AdminManageServices />}
         />
       </Routes>
       <Footer />

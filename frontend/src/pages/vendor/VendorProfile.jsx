@@ -21,14 +21,30 @@ const ApprovalBadge = ({ isApproved }) =>
   );
 
 /* ── Profile Form ── */
-const ProfileForm = ({ initial = EMPTY_FORM, onSubmit, loading, isEdit }) => {
+// ── CHANGED: accepts existingLogo prop; calls onSubmit(form, logoFile)
+const ProfileForm = ({
+  initial = EMPTY_FORM,
+  existingLogo = null,
+  onSubmit,
+  loading,
+  isEdit,
+}) => {
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState({});
 
-  /* Keep form in sync if initial changes (e.g. edit opened after fetch) */
+  // ── ADDED: logo file and preview state
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(existingLogo || null);
+
+  /* Keep form in sync if initial changes */
   useEffect(() => {
     setForm(initial);
   }, [initial.storeName, initial.description, initial.category]);
+
+  /* Sync logo preview when existingLogo changes */
+  useEffect(() => {
+    setLogoPreview(existingLogo || null);
+  }, [existingLogo]);
 
   const validate = () => {
     const e = {};
@@ -43,6 +59,20 @@ const ProfileForm = ({ initial = EMPTY_FORM, onSubmit, loading, isEdit }) => {
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
+  // ── ADDED: handle logo file selection and preview
+  const handleLogoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+  };
+
+  // ── ADDED: clear selected logo
+  const handleRemoveLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(existingLogo || null);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const errs = validate();
@@ -50,7 +80,8 @@ const ProfileForm = ({ initial = EMPTY_FORM, onSubmit, loading, isEdit }) => {
       setErrors(errs);
       return;
     }
-    onSubmit(form);
+    // ── CHANGED: pass logoFile as second argument
+    onSubmit(form, logoFile);
   };
 
   const inputBase =
@@ -123,6 +154,56 @@ const ProfileForm = ({ initial = EMPTY_FORM, onSubmit, loading, isEdit }) => {
         )}
       </div>
 
+      {/* ── ADDED: Store Logo Upload ── */}
+      <div>
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+          Store Logo
+        </label>
+
+        {/* Preview */}
+        {logoPreview && (
+          <div className="relative mb-2 w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+            <img
+              src={logoPreview}
+              alt="Logo preview"
+              className="w-full h-full object-cover"
+            />
+            <button
+              type="button"
+              onClick={handleRemoveLogo}
+              className="absolute top-2 right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow">
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* File input */}
+        <label className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border border-dashed border-gray-300 hover:border-violet-400 bg-gray-50 hover:bg-violet-50/30 cursor-pointer transition-colors">
+          <svg
+            className="w-4 h-4 text-gray-400 shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+            />
+          </svg>
+          <span className="text-sm text-gray-400">
+            {logoFile ? logoFile.name : "Click to upload a logo"}
+          </span>
+          <input
+            type="file"
+            accept="image/jpg,image/jpeg,image/png,image/webp"
+            onChange={handleLogoChange}
+            className="hidden"
+          />
+        </label>
+        <p className="text-xs text-gray-400 mt-1">JPG, PNG or WebP. Max 5MB.</p>
+      </div>
+
       <button
         type="submit"
         disabled={loading}
@@ -154,13 +235,12 @@ const DetailRow = ({ label, value }) => (
 export default function VendorProfile() {
   const navigate = useNavigate();
 
-  const [profile, setProfile] = useState(null); // null = not yet fetched
-  const [fetching, setFetching] = useState(true); // initial load
-  const [editing, setEditing] = useState(false); // edit mode toggle
+  const [profile, setProfile] = useState(null);
+  const [fetching, setFetching] = useState(true);
+  const [editing, setEditing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const [toast, setToast] = useState(null); // { message, type }
+  const [toast, setToast] = useState(null);
 
-  /* ── Show toast and auto-dismiss ── */
   const showToast = (message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
@@ -174,7 +254,7 @@ export default function VendorProfile() {
         setProfile(res.data.profile || res.data);
       } catch (err) {
         if (err.response?.status === 404) {
-          setProfile(null); // no profile yet → show create form
+          setProfile(null);
         } else {
           showToast("Failed to load profile. Please refresh.", "error");
         }
@@ -185,11 +265,19 @@ export default function VendorProfile() {
     fetchProfile();
   }, []);
 
-  /* ── Create profile ── */
-  const handleCreate = async (formData) => {
+  // ── CHANGED: accept logoFile as second argument and use FormData
+  const handleCreate = async (formFields, logoFile) => {
     setActionLoading(true);
     try {
-      const res = await api.post("/vendors/profile", formData);
+      const formData = new FormData();
+      formData.append("storeName", formFields.storeName);
+      formData.append("description", formFields.description || "");
+      formData.append("category", formFields.category);
+      if (logoFile) formData.append("logo", logoFile);
+
+      const res = await api.post("/vendors/profile", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setProfile(res.data.profile || res.data);
       showToast("Store profile created successfully!");
       navigate("/vendor/dashboard");
@@ -203,11 +291,19 @@ export default function VendorProfile() {
     }
   };
 
-  /* ── Update profile ── */
-  const handleUpdate = async (formData) => {
+  // ── CHANGED: accept logoFile as second argument and use FormData
+  const handleUpdate = async (formFields, logoFile) => {
     setActionLoading(true);
     try {
-      const res = await api.put(`/vendors/${profile._id}`, formData);
+      const formData = new FormData();
+      formData.append("storeName", formFields.storeName);
+      formData.append("description", formFields.description || "");
+      formData.append("category", formFields.category);
+      if (logoFile) formData.append("logo", logoFile);
+
+      const res = await api.put(`/vendors/${profile._id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setProfile(res.data.profile || res.data);
       setEditing(false);
       showToast("Profile updated successfully!");
@@ -221,7 +317,6 @@ export default function VendorProfile() {
     }
   };
 
-  /* ── Loading state ── */
   if (fetching) return <Loader />;
 
   return (
@@ -315,9 +410,18 @@ export default function VendorProfile() {
                 {/* Card header */}
                 <div className="px-6 py-5 flex items-center justify-between border-b border-gray-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 bg-gradient-to-br from-violet-100 to-violet-200 rounded-xl flex items-center justify-center text-xl">
-                      🏪
-                    </div>
+                    {/* ── CHANGED: show logo if available, else emoji fallback */}
+                    {profile.logo ? (
+                      <img
+                        src={profile.logo}
+                        alt={profile.storeName}
+                        className="w-11 h-11 rounded-xl object-cover border border-gray-100"
+                      />
+                    ) : (
+                      <div className="w-11 h-11 bg-gradient-to-br from-violet-100 to-violet-200 rounded-xl flex items-center justify-center text-xl">
+                        🏪
+                      </div>
+                    )}
                     <div>
                       <h2 className="text-base font-bold text-gray-900">
                         {profile.storeName}
@@ -347,6 +451,19 @@ export default function VendorProfile() {
                   <DetailRow
                     label="Description"
                     value={profile.description}
+                  />
+                  {/* ── ADDED: logo in detail rows */}
+                  <DetailRow
+                    label="Logo"
+                    value={
+                      profile.logo ? (
+                        <img
+                          src={profile.logo}
+                          alt="Store logo"
+                          className="w-16 h-16 rounded-xl object-cover border border-gray-100"
+                        />
+                      ) : null
+                    }
                   />
                   <DetailRow
                     label="Status"
@@ -381,6 +498,7 @@ export default function VendorProfile() {
                       description: profile.description || "",
                       category: profile.category || "",
                     }}
+                    existingLogo={profile.logo || null}
                     onSubmit={handleUpdate}
                     loading={actionLoading}
                     isEdit={true}

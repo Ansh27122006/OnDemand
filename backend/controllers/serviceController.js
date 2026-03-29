@@ -144,7 +144,6 @@ const updateService = async (req, res) => {
       }
     });
 
-    // if a new file was uploaded, override images with it
     if (req.file) {
       service.images = [req.file.secure_url];
     }
@@ -231,6 +230,38 @@ const getServicesByVendor = async (req, res) => {
   }
 };
 
+// @desc    Get all unique service categories
+// @route   GET /api/services/categories
+// @access  Public
+const getServiceCategories = async (req, res) => {
+  try {
+    const categories = await Service.distinct("category");
+    res.status(200).json(categories);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Get services by category (approved vendors only)
+// @route   GET /api/services/category/:category
+// @access  Public
+const getServicesByCategory = async (req, res) => {
+  try {
+    const services = await Service.find({
+      category: { $regex: new RegExp(`^${req.params.category}$`, "i") },
+    }).populate({
+      path: "vendorId",
+      match: { isApproved: true },
+      select: "storeName isApproved",
+    });
+
+    const filtered = services.filter((s) => s.vendorId !== null);
+    res.status(200).json(filtered);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 module.exports = {
   addService,
   getAllServices,
@@ -239,4 +270,6 @@ module.exports = {
   deleteService,
   getMyServices,
   getServicesByVendor,
+  getServiceCategories,
+  getServicesByCategory,
 };

@@ -35,6 +35,7 @@ const navConfig = {
       { label: "Manage Vendors", to: "/admin/vendors" },
       { label: "Manage Users", to: "/admin/users" },
       { label: "Manage Products", to: "/admin/products" },
+      { label: "Manage Services", to: "/admin/services" },
       { label: "Edit Profile", to: "/profile/edit" },
     ],
   },

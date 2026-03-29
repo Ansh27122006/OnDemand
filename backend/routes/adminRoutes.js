@@ -8,6 +8,8 @@ const {
   rejectVendor,
   deleteProduct,
   getPlatformStats,
+  getAllServices,
+  deleteService,
 } = require("../controllers/adminController");
 const { protect, authorizeRoles } = require("../middleware/authMiddleware");
 
@@ -39,5 +41,11 @@ router.route("/vendors/:id/reject").put(rejectVendor);
 // ── Products
 // DELETE /api/admin/products/:id
 router.route("/products/:id").delete(deleteProduct);
+
+// ── Services
+// GET    /api/admin/services
+// DELETE /api/admin/services/:id
+router.route("/services").get(getAllServices);
+router.route("/services/:id").delete(deleteService);
 
 module.exports = router;

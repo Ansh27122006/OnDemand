@@ -12,6 +12,7 @@ const addProduct = async (req, res) => {
       return res.status(404).json({ message: "Vendor profile not found" });
     }
 
+    // Check if vendor is approved
     if (!vendorProfile.isApproved) {
       return res.status(403).json({
         message:
@@ -21,26 +22,18 @@ const addProduct = async (req, res) => {
 
     const { name, description, price, category, images, stock } = req.body;
 
-    // ── CHANGED: use uploaded file URL if present, else body images, else []
-    const productImages = req.file
-      ? [req.file.secure_url]
-      : images
-      ? Array.isArray(images)
-        ? images
-        : [images]
-      : [];
-
     const product = new Product({
       vendorId: vendorProfile._id,
       name,
       description,
       price,
       category,
-      images: productImages, // ── CHANGED
+      images,
       stock,
     });
 
     const savedProduct = await product.save();
+
     res.status(201).json(savedProduct);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -56,9 +49,13 @@ const getAllProducts = async (req, res) => {
 
     const filter = {};
 
-    if (category) filter.category = category;
+    if (category) {
+      filter.category = category;
+    }
 
-    if (search) filter.name = { $regex: search, $options: "i" };
+    if (search) {
+      filter.name = { $regex: search, $options: "i" };
+    }
 
     if (minPrice !== undefined || maxPrice !== undefined) {
       filter.price = {};
@@ -71,7 +68,9 @@ const getAllProducts = async (req, res) => {
       match: { isApproved: true },
     });
 
+    // Only return items whose vendor passed the approval match
     const approvedProducts = products.filter((p) => p.vendorId !== null);
+
     res.status(200).json(approvedProducts);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -89,6 +88,7 @@ const getProductById = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
+    // vendor may have been unapproved after product creation
     if (!product.vendorId?.isApproved) {
       return res.status(403).json({ message: "This product is not available" });
     }
@@ -136,11 +136,8 @@ const updateProduct = async (req, res) => {
       }
     });
 
-    if (req.file) {
-      product.images = [req.file.secure_url];
-    }
-
     const updatedProduct = await product.save();
+
     res.status(200).json(updatedProduct);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -171,13 +168,14 @@ const deleteProduct = async (req, res) => {
     }
 
     await product.deleteOne();
+
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
-// @desc    Get all products for the logged-in vendor
+// @desc    Get all products for the logged-in vendor (their own products)
 // @route   GET /api/products/my/list
 // @access  Vendor only
 const getMyProducts = async (req, res) => {
@@ -189,6 +187,7 @@ const getMyProducts = async (req, res) => {
     }
 
     const products = await Product.find({ vendorId: vendorProfile._id });
+
     res.status(200).json(products);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -216,7 +215,40 @@ const getProductsByVendor = async (req, res) => {
     }
 
     const products = await Product.find({ vendorId });
+
     res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Get all unique product categories
+// @route   GET /api/products/categories
+// @access  Public
+const getProductCategories = async (req, res) => {
+  try {
+    const categories = await Product.distinct("category");
+    res.status(200).json(categories);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Get products by category (approved vendors only)
+// @route   GET /api/products/category/:category
+// @access  Public
+const getProductsByCategory = async (req, res) => {
+  try {
+    const products = await Product.find({
+      category: { $regex: new RegExp(`^${req.params.category}$`, "i") },
+    }).populate({
+      path: "vendorId",
+      match: { isApproved: true },
+      select: "storeName isApproved",
+    });
+
+    const filtered = products.filter((p) => p.vendorId !== null);
+    res.status(200).json(filtered);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -230,4 +262,6 @@ module.exports = {
   deleteProduct,
   getMyProducts,
   getProductsByVendor,
+  getProductCategories,
+  getProductsByCategory,
 };

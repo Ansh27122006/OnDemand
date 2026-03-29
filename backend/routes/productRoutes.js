@@ -10,6 +10,8 @@ const {
   getProductById,
   updateProduct,
   deleteProduct,
+  getProductCategories,
+  getProductsByCategory,
 } = require("../controllers/productController.js");
 const { upload } = require("../config/cloudinary.js");
 
@@ -60,26 +62,6 @@ const { upload } = require("../config/cloudinary.js");
  *     responses:
  *       201:
  *         description: Product created successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                 name:
- *                   type: string
- *                 description:
- *                   type: string
- *                 price:
- *                   type: number
- *                 stock:
- *                   type: integer
- *                 vendorId:
- *                   type: string
- *                 createdAt:
- *                   type: string
- *                   format: date-time
  *       401:
  *         description: Unauthorized - No valid token provided
  *       403:
@@ -103,167 +85,58 @@ router.post(
  *       - Products
  *     parameters:
  *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *         description: Page number for pagination
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *         description: Number of products per page
- *       - in: query
  *         name: category
  *         schema:
  *           type: string
- *         description: Filter products by category
  *       - in: query
  *         name: minPrice
  *         schema:
  *           type: number
- *         description: Minimum price filter
  *       - in: query
  *         name: maxPrice
  *         schema:
  *           type: number
- *         description: Maximum price filter
  *       - in: query
  *         name: search
  *         schema:
  *           type: string
- *         description: Search term for product name or description
  *     responses:
  *       200:
  *         description: Successfully retrieved all products
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                   name:
- *                     type: string
- *                   description:
- *                     type: string
- *                   price:
- *                     type: number
- *                   category:
- *                     type: string
- *                   stock:
- *                     type: integer
- *                   vendorId:
- *                     type: string
- *                   image:
- *                     type: string
- *                   createdAt:
- *                     type: string
- *                     format: date-time
  *       500:
  *         description: Server error
  */
 router.get("/", getAllProducts);
 
-/**
- * @swagger
- * /products/vendor/{vendorId}:
- *   get:
- *     summary: Get products by vendor
- *     description: Retrieve all products offered by a specific vendor
- *     tags:
- *       - Products
- *     parameters:
- *       - in: path
- *         name: vendorId
- *         required: true
- *         schema:
- *           type: string
- *         description: The ID of the vendor
- *     responses:
- *       200:
- *         description: Products retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                   name:
- *                     type: string
- *                   description:
- *                     type: string
- *                   price:
- *                     type: number
- *                   stock:
- *                     type: integer
- *                   vendorId:
- *                     type: string
- *       404:
- *         description: Vendor not found
- *     description: Server error
- */
+// ── IMPORTANT: These static routes MUST be before /:id ──────────────────────
+
+// @desc  Get all unique product categories
+// @route GET /api/products/categories
+// @access Public
+router.get("/categories", getProductCategories);
+
+// @desc  Get products filtered by category
+// @route GET /api/products/category/:category
+// @access Public
+router.get("/category/:category", getProductsByCategory);
+
+// @desc  Get vendor's own products
+// @route GET /api/products/my/list
+// @access Vendor only
 router.get("/my/list", protect, authorizeRoles("vendor"), getMyProducts);
 
-/**
- * @swagger
- * /products/vendor/{vendorId}:
- *   get:
- *     summary: Get all products by a specific vendor
- *     description: Retrieve all published products for a vendor
- *     tags:
- *       - Products
- *     parameters:
- *       - name: vendorId
- *         in: path
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Products retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   _id:
- *                     type: string
- *                   name:
- *                     type: string
- *                   description:
- *                     type: string
- *                   price:
- *                     type: number
- *                   category:
- *                     type: string
- *                   images:
- *                     type: array
- *                     items:
- *                       type: string
- *                   stock:
- *                     type: integer
- *                   vendorId:
- *                     type: string
- *       404:
- *         description: Vendor not found
- *       500:
- *         description: Server error
- */
+// @desc  Get all products by a specific vendor
+// @route GET /api/products/vendor/:vendorId
+// @access Public
 router.get("/vendor/:vendorId", getProductsByVendor);
+
+// ── Dynamic :id routes MUST come after all static routes ────────────────────
 
 /**
  * @swagger
  * /products/{id}:
  *   get:
  *     summary: Get product by ID
- *     description: Retrieve a specific product by its ID
  *     tags:
  *       - Products
  *     parameters:
@@ -272,36 +145,9 @@ router.get("/vendor/:vendorId", getProductsByVendor);
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the product
  *     responses:
  *       200:
  *         description: Product retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                 name:
- *                   type: string
- *                 description:
- *                   type: string
- *                 price:
- *                   type: number
- *                 category:
- *                   type: string
- *                 stock:
- *                   type: integer
- *                 vendorId:
- *                   type: string
- *                 image:
- *                   type: string
- *                 sku:
- *                   type: string
- *                 createdAt:
- *                   type: string
- *                   format: date-time
  *       404:
  *         description: Product not found
  *       500:
@@ -314,7 +160,6 @@ router.get("/:id", getProductById);
  * /products/{id}:
  *   put:
  *     summary: Update a product
- *     description: Update product details. Only the vendor who created the product can update it.
  *     tags:
  *       - Products
  *     security:
@@ -325,60 +170,13 @@ router.get("/:id", getProductById);
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the product to update
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 example: "Laptop Pro Plus"
- *               description:
- *                 type: string
- *                 example: "Enhanced high-performance laptop"
- *               price:
- *                 type: number
- *                 example: 1499.99
- *               category:
- *                 type: string
- *                 example: "Electronics"
- *               stock:
- *                 type: integer
- *                 example: 40
- *               image:
- *                 type: string
- *                 example: "https://example.com/laptop-new.jpg"
- *               sku:
- *                 type: string
- *                 example: "LAPTOP-002"
  *     responses:
  *       200:
  *         description: Product updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                 name:
- *                   type: string
- *                 description:
- *                   type: string
- *                 price:
- *                   type: number
- *                 stock:
- *                   type: integer
- *                 updatedAt:
- *                   type: string
- *                   format: date-time
  *       401:
- *         description: Unauthorized - No valid token provided
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Only the vendor owner can update
+ *         description: Forbidden
  *       404:
  *         description: Product not found
  *       500:
@@ -397,7 +195,6 @@ router.put(
  * /products/{id}:
  *   delete:
  *     summary: Delete a product
- *     description: Delete a product from the catalog. Only the vendor who created the product can delete it.
  *     tags:
  *       - Products
  *     security:
@@ -408,22 +205,13 @@ router.put(
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the product to delete
  *     responses:
  *       200:
  *         description: Product deleted successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Product deleted successfully"
  *       401:
- *         description: Unauthorized - No valid token provided
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Only the vendor owner can delete
+ *         description: Forbidden
  *       404:
  *         description: Product not found
  *       500:

@@ -10,6 +10,8 @@ const {
   getServiceById,
   updateService,
   deleteService,
+  getServiceCategories,
+  getServicesByCategory,
 } = require("../controllers/serviceController.js");
 const { upload } = require("../config/cloudinary.js");
 
@@ -53,24 +55,6 @@ const { upload } = require("../config/cloudinary.js");
  *     responses:
  *       201:
  *         description: Service created successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                 name:
- *                   type: string
- *                 description:
- *                   type: string
- *                 price:
- *                   type: number
- *                 vendorId:
- *                   type: string
- *                 createdAt:
- *                   type: string
- *                   format: date-time
  *       401:
  *         description: Unauthorized - No valid token provided
  *       403:
@@ -94,139 +78,58 @@ router.post(
  *       - Services
  *     parameters:
  *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *         description: Page number for pagination
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *         description: Number of services per page
- *       - in: query
  *         name: category
  *         schema:
  *           type: string
- *         description: Filter services by category
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
  *     responses:
  *       200:
  *         description: Successfully retrieved all services
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                   name:
- *                     type: string
- *                   description:
- *                     type: string
- *                   price:
- *                     type: number
- *                   category:
- *                     type: string
- *                   vendorId:
- *                     type: string
- *                   createdAt:
- *                     type: string
- *                     format: date-time
  *       500:
  *         description: Server error
  */
 router.get("/", getAllServices);
 
-/**
- * @swagger
- * /services/vendor/{vendorId}:
- *   get:
- *     summary: Get services by vendor
- *     description: Retrieve all services offered by a specific vendor
- *     tags:
- *       - Services
- *     parameters:
- *       - in: path
- *         name: vendorId
- *         required: true
- *         schema:
- *           type: string
- *         description: The ID of the vendor
- *     responses:
- *       200:
- *         description: Services retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                   name:
- *                     type: string
- *                   description:
- *                     type: string
- *                   price:
- *                     type: number
- *                   vendorId:
- *                     type: string
- *       404:
- *         description: Vendor not found
- *       500:
- *         description: Server error
- */
+// ── IMPORTANT: These static routes MUST be before /:id ──────────────────────
+
+// @desc  Get all unique service categories
+// @route GET /api/services/categories
+// @access Public
+router.get("/categories", getServiceCategories);
+
+// @desc  Get services filtered by category
+// @route GET /api/services/category/:category
+// @access Public
+router.get("/category/:category", getServicesByCategory);
+
+// @desc  Get vendor's own services
+// @route GET /api/services/my/list
+// @access Vendor only
 router.get("/my/list", protect, authorizeRoles("vendor"), getMyServices);
 
-/**
- * @swagger
- * /services/vendor/{vendorId}:
- *   get:
- *     summary: Get all services by a specific vendor
- *     description: Retrieve all published services for a vendor
- *     tags:
- *       - Services
- *     parameters:
- *       - name: vendorId
- *         in: path
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Services retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   _id:
- *                     type: string
- *                   name:
- *                     type: string
- *                   description:
- *                     type: string
- *                   price:
- *                     type: number
- *                   vendorId:
- *                     type: string
- *       404:
- *         description: Vendor not found
- *       500:
- *         description: Server error
- */
+// @desc  Get all services by a specific vendor
+// @route GET /api/services/vendor/:vendorId
+// @access Public
 router.get("/vendor/:vendorId", getServicesByVendor);
+
+// ── Dynamic :id routes MUST come after all static routes ────────────────────
 
 /**
  * @swagger
  * /services/{id}:
  *   get:
  *     summary: Get service by ID
- *     description: Retrieve a specific service by its ID
  *     tags:
  *       - Services
  *     parameters:
@@ -235,30 +138,9 @@ router.get("/vendor/:vendorId", getServicesByVendor);
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the service
  *     responses:
  *       200:
  *         description: Service retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                 name:
- *                   type: string
- *                 description:
- *                   type: string
- *                 price:
- *                   type: number
- *                 category:
- *                   type: string
- *                 vendorId:
- *                   type: string
- *                 createdAt:
- *                   type: string
- *                   format: date-time
  *       404:
  *         description: Service not found
  *       500:
@@ -271,7 +153,6 @@ router.get("/:id", getServiceById);
  * /services/{id}:
  *   put:
  *     summary: Update a service
- *     description: Update service details. Only the vendor who created the service can update it.
  *     tags:
  *       - Services
  *     security:
@@ -282,52 +163,13 @@ router.get("/:id", getServiceById);
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the service to update
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 example: "Advanced Web Development"
- *               description:
- *                 type: string
- *                 example: "Updated professional web development services"
- *               price:
- *                 type: number
- *                 example: 1500
- *               category:
- *                 type: string
- *                 example: "Technology"
- *               duration:
- *                 type: string
- *                 example: "3 weeks"
  *     responses:
  *       200:
  *         description: Service updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                 name:
- *                   type: string
- *                 description:
- *                   type: string
- *                 price:
- *                   type: number
- *                 updatedAt:
- *                   type: string
- *                   format: date-time
  *       401:
- *         description: Unauthorized - No valid token provided
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Only the vendor owner can update
+ *         description: Forbidden
  *       404:
  *         description: Service not found
  *       500:
@@ -346,7 +188,6 @@ router.put(
  * /services/{id}:
  *   delete:
  *     summary: Delete a service
- *     description: Delete a service from the catalog. Only the vendor who created the service can delete it.
  *     tags:
  *       - Services
  *     security:
@@ -357,22 +198,13 @@ router.put(
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the service to delete
  *     responses:
  *       200:
  *         description: Service deleted successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Service deleted successfully"
  *       401:
- *         description: Unauthorized - No valid token provided
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Only the vendor owner can delete
+ *         description: Forbidden
  *       404:
  *         description: Service not found
  *       500:

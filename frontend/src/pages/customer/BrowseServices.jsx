@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import CATEGORIES from "../../constants/categories";
+
 const PLACEHOLDER = "https://placehold.co/400x300?text=No+Image";
 
 /* ── Service Card ── */
@@ -9,14 +10,11 @@ const ServiceCard = ({ service }) => {
   const image = service.images?.[0] || service.image || PLACEHOLDER;
   return (
     <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
-      {/* Card Header — image with category badge overlay */}
       <div className="relative h-48 bg-slate-100 overflow-hidden">
         <img
           src={image}
           alt={service.name}
-          onError={(e) => {
-            e.target.src = PLACEHOLDER;
-          }}
+          onError={(e) => { e.target.src = PLACEHOLDER; }}
           className="w-full h-full object-cover"
         />
         {service.category && (
@@ -26,7 +24,6 @@ const ServiceCard = ({ service }) => {
         )}
       </div>
 
-      {/* Content */}
       <div className="p-5 flex flex-col flex-1">
         <h3 className="text-sm font-bold text-slate-800 leading-snug line-clamp-2 mb-1">
           {service.name}
@@ -37,20 +34,18 @@ const ServiceCard = ({ service }) => {
           </p>
         )}
 
+        {/* Store name */}
+        {service.vendorId?.storeName && (
+          <p className="text-xs text-slate-400 mb-2">
+            🏪 {service.vendorId.storeName}
+          </p>
+        )}
+
         {/* Duration badge */}
         {service.duration && (
           <div className="inline-flex items-center gap-1.5 text-xs text-slate-500 font-medium mb-4">
-            <svg
-              className="w-3.5 h-3.5 text-slate-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}>
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"
-              />
+            <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
             </svg>
             {service.duration} {service.duration === 1 ? "hour" : "hours"}
           </div>
@@ -85,54 +80,61 @@ const Spinner = () => (
 );
 
 /* ── Empty State ── */
-const EmptyState = ({ query, category }) => (
+const EmptyState = ({ query, category, vendor }) => (
   <div className="flex flex-col items-center justify-center py-32 gap-4 text-center">
     <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center">
-      <svg
-        className="w-8 h-8 text-blue-300"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1.5}>
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
-        />
+      <svg className="w-8 h-8 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
       </svg>
     </div>
     <div>
       <p className="text-slate-700 font-bold text-lg">No services found</p>
       <p className="text-slate-400 text-sm mt-1">
-        {query || category
-          ? `No results for${query ? ` "${query}"` : ""}${
-              category ? ` in "${category}"` : ""
-            }. Try adjusting your filters.`
+        {query || category || vendor
+          ? `No results match your current filters. Try adjusting or clearing them.`
           : "There are no services available right now. Check back soon!"}
       </p>
     </div>
   </div>
 );
 
+/* ── Shared select class ── */
+const selectClass =
+  "sm:w-52 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-sm appearance-none cursor-pointer";
+
 /* ══════════════════════════════════════════
    BrowseServices Page
 ══════════════════════════════════════════ */
 const BrowseServices = () => {
   const [services, setServices] = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // ── Filters ──
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedVendor, setSelectedVendor] = useState("");
 
-  // Fetch services on mount
+  // ── Fetch services + vendors on mount ──
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchAll = async () => {
       try {
-        const res = await api.get("/services");
-        const data = Array.isArray(res.data)
-          ? res.data
-          : res.data.services || [];
-        setServices(data);
+        const [servicesRes, vendorsRes] = await Promise.all([
+          api.get("/services"),
+          api.get("/vendors/"),
+        ]);
+
+        const servicesData = Array.isArray(servicesRes.data)
+          ? servicesRes.data
+          : servicesRes.data.services || [];
+
+        const vendorsData = Array.isArray(vendorsRes.data)
+          ? vendorsRes.data
+          : vendorsRes.data.vendors || [];
+
+        setServices(servicesData);
+        setVendors(vendorsData);
       } catch (err) {
         setError("Failed to load services. Please try again later.");
       } finally {
@@ -140,28 +142,37 @@ const BrowseServices = () => {
       }
     };
 
-    fetchServices();
+    fetchAll();
   }, []);
 
-  // Filter services by search + category
+  // ── Client-side filtering: search + category + vendor all work together ──
   const filteredServices = useMemo(() => {
     return services.filter((s) => {
       const matchesSearch = s.name
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase());
+
       const matchesCategory = selectedCategory
         ? s.category === selectedCategory
         : true;
-      return matchesSearch && matchesCategory;
+
+      const matchesVendor = selectedVendor
+        ? s.vendorId?._id === selectedVendor ||
+          s.vendorId === selectedVendor
+        : true;
+
+      return matchesSearch && matchesCategory && matchesVendor;
     });
-  }, [services, searchQuery, selectedCategory]);
+  }, [services, searchQuery, selectedCategory, selectedVendor]);
 
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedCategory("");
+    setSelectedVendor("");
   };
 
-  const hasActiveFilters = searchQuery || selectedCategory;
+  const hasActiveFilters = searchQuery || selectedCategory || selectedVendor;
+  const selectedVendorName = vendors.find((v) => v._id === selectedVendor)?.storeName;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -174,29 +185,22 @@ const BrowseServices = () => {
           <p className="text-slate-500 mt-1 text-sm">
             {loading
               ? "Loading..."
-              : `${filteredServices.length} service${
-                  filteredServices.length !== 1 ? "s" : ""
-                } available`}
+              : `${filteredServices.length} service${filteredServices.length !== 1 ? "s" : ""} available`}
           </p>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+
         {/* ── Filters Bar ── */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-8">
+        <div className="flex flex-col sm:flex-row gap-3 mb-8 flex-wrap">
+
           {/* Search */}
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-[200px]">
             <svg
               className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}>
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               type="text"
@@ -209,17 +213,8 @@ const BrowseServices = () => {
               <button
                 onClick={() => setSearchQuery("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             )}
@@ -229,13 +224,22 @@ const BrowseServices = () => {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="sm:w-52 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-sm appearance-none cursor-pointer">
+            className={selectClass}>
             <option value="">All Categories</option>
             {CATEGORIES.map((cat) => (
-              <option
-                key={cat}
-                value={cat}>
-                {cat}
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+
+          {/* ── NEW: Vendor Store dropdown ── */}
+          <select
+            value={selectedVendor}
+            onChange={(e) => setSelectedVendor(e.target.value)}
+            className={selectClass}>
+            <option value="">All Stores</option>
+            {vendors.map((vendor) => (
+              <option key={vendor._id} value={vendor._id}>
+                {vendor.storeName}
               </option>
             ))}
           </select>
@@ -256,20 +260,9 @@ const BrowseServices = () => {
             {searchQuery && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-100">
                 Search: "{searchQuery}"
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="hover:text-blue-900">
-                  <svg
-                    className="w-3 h-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
+                <button onClick={() => setSearchQuery("")} className="hover:text-blue-900">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </span>
@@ -277,20 +270,20 @@ const BrowseServices = () => {
             {selectedCategory && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-100">
                 Category: {selectedCategory}
-                <button
-                  onClick={() => setSelectedCategory("")}
-                  className="hover:text-blue-900">
-                  <svg
-                    className="w-3 h-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
+                <button onClick={() => setSelectedCategory("")} className="hover:text-blue-900">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            )}
+            {/* ── NEW: Vendor active pill ── */}
+            {selectedVendor && selectedVendorName && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-50 text-orange-700 text-xs font-semibold rounded-full border border-orange-100">
+                Store: {selectedVendorName}
+                <button onClick={() => setSelectedVendor("")} className="hover:text-orange-900">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </span>
@@ -301,17 +294,8 @@ const BrowseServices = () => {
         {/* ── Error ── */}
         {error && (
           <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm mb-6">
-            <svg
-              className="w-5 h-5 shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}>
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"
-              />
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
             </svg>
             {error}
           </div>
@@ -324,14 +308,12 @@ const BrowseServices = () => {
           <EmptyState
             query={searchQuery}
             category={selectedCategory}
+            vendor={selectedVendor}
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {filteredServices.map((service) => (
-              <ServiceCard
-                key={service._id}
-                service={service}
-              />
+              <ServiceCard key={service._id} service={service} />
             ))}
           </div>
         )}

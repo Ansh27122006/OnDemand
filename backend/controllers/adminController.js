@@ -154,6 +154,36 @@ const getPlatformStats = async (req, res) => {
   }
 };
 
+// @desc    Get all services
+// @route   GET /api/admin/services
+// @access  Admin
+const getAllServices = async (req, res) => {
+  try {
+    const services = await Service.find()
+      .populate("vendorId", "storeName")
+      .sort({ createdAt: -1 });
+    res.status(200).json(services);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Delete a service by ID
+// @route   DELETE /api/admin/services/:id
+// @access  Admin
+const deleteService = async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id);
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+    await service.deleteOne();
+    res.status(200).json({ message: "Service deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 module.exports = {
   getAllUsers,
   deleteUser,
@@ -161,5 +191,7 @@ module.exports = {
   approveVendor,
   rejectVendor,
   deleteProduct,
+  getAllServices,
+  deleteService,
   getPlatformStats,
 };

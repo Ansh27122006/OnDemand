@@ -17,12 +17,9 @@ const ProductCard = ({ product }) => {
         <img
           src={image}
           alt={product.name}
-          onError={(e) => {
-            e.target.src = PLACEHOLDER;
-          }}
+          onError={(e) => { e.target.src = PLACEHOLDER; }}
           className="w-full h-full object-cover"
         />
-        {/* Category badge */}
         {product.category && (
           <span className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 backdrop-blur-sm text-blue-600 text-xs font-semibold rounded-full border border-blue-100 shadow-sm">
             {product.category}
@@ -38,6 +35,12 @@ const ProductCard = ({ product }) => {
         {product.description && (
           <p className="text-xs text-slate-400 line-clamp-2 mb-3">
             {product.description}
+          </p>
+        )}
+        {/* Store name */}
+        {product.vendorId?.storeName && (
+          <p className="text-xs text-slate-400 mb-2">
+            🏪 {product.vendorId.storeName}
           </p>
         )}
 
@@ -65,55 +68,61 @@ const Spinner = () => (
 );
 
 /* ── Empty State ── */
-const EmptyState = ({ query, category }) => (
+const EmptyState = ({ query, category, vendor }) => (
   <div className="flex flex-col items-center justify-center py-32 gap-4 text-center">
     <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center">
-      <svg
-        className="w-8 h-8 text-blue-300"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1.5}>
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-        />
+      <svg className="w-8 h-8 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
     </div>
     <div>
       <p className="text-slate-700 font-bold text-lg">No products found</p>
       <p className="text-slate-400 text-sm mt-1">
-        {query || category
-          ? `No results for${query ? ` "${query}"` : ""}${
-              category ? ` in "${category}"` : ""
-            }. Try adjusting your filters.`
+        {query || category || vendor
+          ? `No results match your current filters. Try adjusting or clearing them.`
           : "There are no products available right now. Check back soon!"}
       </p>
     </div>
   </div>
 );
 
+/* ── Custom select arrow ── */
+const selectClass =
+  "sm:w-52 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-sm appearance-none cursor-pointer";
+
 /* ══════════════════════════════════════════
    BrowseProducts Page
 ══════════════════════════════════════════ */
 const BrowseProducts = () => {
   const [products, setProducts] = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // ── Filters ──
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedVendor, setSelectedVendor] = useState("");
 
-  // Fetch products on mount
+  // ── Fetch products + vendors on mount ──
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchAll = async () => {
       try {
-        const res = await api.get("/products");
-        // Support both { products: [] } and direct array responses
-        const data = Array.isArray(res.data)
-          ? res.data
-          : res.data.products || [];
-        setProducts(data);
+        const [productsRes, vendorsRes] = await Promise.all([
+          api.get("/products"),
+          api.get("/vendor/all"),
+        ]);
+
+        const productsData = Array.isArray(productsRes.data)
+          ? productsRes.data
+          : productsRes.data.products || [];
+
+        const vendorsData = Array.isArray(vendorsRes.data)
+          ? vendorsRes.data
+          : vendorsRes.data.vendors || [];
+
+        setProducts(productsData);
+        setVendors(vendorsData);
       } catch (err) {
         setError("Failed to load products. Please try again later.");
       } finally {
@@ -121,28 +130,38 @@ const BrowseProducts = () => {
       }
     };
 
-    fetchProducts();
+    fetchAll();
   }, []);
 
-  // Filter products by search + category
+  // ── Client-side filtering: search + category + vendor all work together ──
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       const matchesSearch = p.name
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase());
+
       const matchesCategory = selectedCategory
         ? p.category === selectedCategory
         : true;
-      return matchesSearch && matchesCategory;
+
+      const matchesVendor = selectedVendor
+        ? p.vendorId?._id === selectedVendor ||
+          p.vendorId === selectedVendor
+        : true;
+
+      return matchesSearch && matchesCategory && matchesVendor;
     });
-  }, [products, searchQuery, selectedCategory]);
+  }, [products, searchQuery, selectedCategory, selectedVendor]);
 
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedCategory("");
+    setSelectedVendor("");
   };
 
-  const hasActiveFilters = searchQuery || selectedCategory;
+  const hasActiveFilters = searchQuery || selectedCategory || selectedVendor;
+
+  const selectedVendorName = vendors.find((v) => v._id === selectedVendor)?.storeName;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -155,29 +174,22 @@ const BrowseProducts = () => {
           <p className="text-slate-500 mt-1 text-sm">
             {loading
               ? "Loading..."
-              : `${filteredProducts.length} product${
-                  filteredProducts.length !== 1 ? "s" : ""
-                } available`}
+              : `${filteredProducts.length} product${filteredProducts.length !== 1 ? "s" : ""} available`}
           </p>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+
         {/* ── Filters Bar ── */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-8">
+        <div className="flex flex-col sm:flex-row gap-3 mb-8 flex-wrap">
+
           {/* Search */}
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-[200px]">
             <svg
               className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}>
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               type="text"
@@ -190,17 +202,8 @@ const BrowseProducts = () => {
               <button
                 onClick={() => setSearchQuery("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             )}
@@ -210,13 +213,22 @@ const BrowseProducts = () => {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="sm:w-52 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-sm appearance-none cursor-pointer">
+            className={selectClass}>
             <option value="">All Categories</option>
             {CATEGORIES.map((cat) => (
-              <option
-                key={cat}
-                value={cat}>
-                {cat}
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+
+          {/* ── NEW: Vendor Store dropdown ── */}
+          <select
+            value={selectedVendor}
+            onChange={(e) => setSelectedVendor(e.target.value)}
+            className={selectClass}>
+            <option value="">All Stores</option>
+            {vendors.map((vendor) => (
+              <option key={vendor._id} value={vendor._id}>
+                {vendor.storeName}
               </option>
             ))}
           </select>
@@ -237,20 +249,9 @@ const BrowseProducts = () => {
             {searchQuery && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-100">
                 Search: "{searchQuery}"
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="hover:text-blue-900">
-                  <svg
-                    className="w-3 h-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
+                <button onClick={() => setSearchQuery("")} className="hover:text-blue-900">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </span>
@@ -258,20 +259,20 @@ const BrowseProducts = () => {
             {selectedCategory && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-100">
                 Category: {selectedCategory}
-                <button
-                  onClick={() => setSelectedCategory("")}
-                  className="hover:text-blue-900">
-                  <svg
-                    className="w-3 h-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
+                <button onClick={() => setSelectedCategory("")} className="hover:text-blue-900">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            )}
+            {/* ── NEW: Vendor active pill ── */}
+            {selectedVendor && selectedVendorName && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-50 text-orange-700 text-xs font-semibold rounded-full border border-orange-100">
+                Store: {selectedVendorName}
+                <button onClick={() => setSelectedVendor("")} className="hover:text-orange-900">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </span>
@@ -282,17 +283,8 @@ const BrowseProducts = () => {
         {/* ── Error ── */}
         {error && (
           <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm mb-6">
-            <svg
-              className="w-5 h-5 shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}>
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"
-              />
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
             </svg>
             {error}
           </div>
@@ -305,14 +297,12 @@ const BrowseProducts = () => {
           <EmptyState
             query={searchQuery}
             category={selectedCategory}
+            vendor={selectedVendor}
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {filteredProducts.map((product) => (
-              <ProductCard
-                key={product._id}
-                product={product}
-              />
+              <ProductCard key={product._id} product={product} />
             ))}
           </div>
         )}

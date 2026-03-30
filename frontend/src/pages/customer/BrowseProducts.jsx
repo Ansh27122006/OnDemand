@@ -110,7 +110,7 @@ const BrowseProducts = () => {
       try {
         const [productsRes, vendorsRes] = await Promise.all([
           api.get("/products"),
-          api.get("/vendor/all"),
+          api.get("/vendors/"),
         ]);
 
         const productsData = Array.isArray(productsRes.data)

@@ -122,7 +122,7 @@ const BrowseServices = () => {
       try {
         const [servicesRes, vendorsRes] = await Promise.all([
           api.get("/services"),
-          api.get("/vendor/all"),
+          api.get("/vendors/"),
         ]);
 
         const servicesData = Array.isArray(servicesRes.data)

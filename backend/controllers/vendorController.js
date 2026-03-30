@@ -113,3 +113,51 @@ module.exports = {
   updateVendorProfile,
   getAllApprovedVendors,
 };
+
+
+// ============================================================
+// ADD THIS FUNCTION to controllers/vendorController.js
+// Place it BEFORE the module.exports at the bottom
+// ============================================================
+
+const getVendorStore = async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+
+    // Fetch vendor profile and populate owner name
+    const vendor = await VendorProfile.findById(vendorId).populate('userId', 'name');
+
+    // Return 404 if vendor not found or not approved
+    if (!vendor || !vendor.isApproved) {
+      return res.status(404).json({ message: 'Store not found' });
+    }
+
+    // Fetch products and services in parallel
+    const [products, services] = await Promise.all([
+      Product.find({ vendorId }),
+      Service.find({ vendorId }),
+    ]);
+
+    res.status(200).json({ vendor, products, services });
+  } catch (error) {
+    console.error('getVendorStore error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// ============================================================
+// ADD THIS TO module.exports in vendorController.js
+// e.g.  module.exports = { ..., getVendorStore };
+// ============================================================
+
+
+// ============================================================
+// ADD THIS ROUTE to routes/vendorRoutes.js
+// IMPORTANT: Place this line BEFORE any /:id routes
+// ============================================================
+
+// At the top of vendorRoutes.js, add to your imports:
+// const { getVendorStore } = require('../controllers/vendorController');
+
+// Then add the route (BEFORE /:id routes):
+// router.get('/:vendorId/store', getVendorStore);

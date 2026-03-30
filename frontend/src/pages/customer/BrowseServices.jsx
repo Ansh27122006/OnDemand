@@ -34,12 +34,16 @@ const ServiceCard = ({ service }) => {
           </p>
         )}
 
-        {/* Store name */}
-        {service.vendorId?.storeName && (
-          <p className="text-xs text-slate-400 mb-2">
-            🏪 {service.vendorId.storeName}
-          </p>
-        )}
+        {/* Store name — clickable link to vendor store */}
+          {service.vendorId?.storeName && (
+            <Link
+              to={`/store/${service.vendorId._id}`}
+              className="text-xs text-slate-400 hover:text-blue-600 hover:underline mb-2 inline-block transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              🏪 {service.vendorId.storeName}
+            </Link>
+          )}
 
         {/* Duration badge */}
         {service.duration && (

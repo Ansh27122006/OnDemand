@@ -5,6 +5,7 @@ const {
   getVendorProfile,
   updateVendorProfile,
   getAllApprovedVendors,
+  getVendorStore,
 } = require("../controllers/vendorController");
 const { protect, authorizeRoles } = require("../middleware/authMiddleware");
 const VendorProfile = require("../models/VendorsProfile");
@@ -83,6 +84,8 @@ router.get("/profile", protect, async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
+
+router.get("/:vendorId/store", getVendorStore);
 
 /**
  * @swagger

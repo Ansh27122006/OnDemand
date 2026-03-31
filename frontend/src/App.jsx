@@ -15,6 +15,7 @@ import BrowseProducts from "./pages/customer/BrowseProducts";
 import BrowseServices from "./pages/customer/BrowseServices";
 import ProductDetail from "./pages/customer/ProductDetail";
 import ServiceDetail from "./pages/customer/ServiceDetail";
+import VendorStore from './pages/VendorStore';
 
 // Customer pages
 import Home from "./pages/customer/Home";
@@ -78,6 +79,10 @@ const App = () => {
           path="/services/:id"
           element={<ServiceDetail />}
         />
+        <Route
+            path="/store/:vendorId"
+            element={<VendorStore />} 
+          />
         {/* ── Protected Routes (Customer, Vendor, Admin) ── */}
         <Route
           element={

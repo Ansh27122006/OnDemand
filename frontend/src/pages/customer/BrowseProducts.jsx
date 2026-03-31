@@ -37,12 +37,16 @@ const ProductCard = ({ product }) => {
             {product.description}
           </p>
         )}
-        {/* Store name */}
-        {product.vendorId?.storeName && (
-          <p className="text-xs text-slate-400 mb-2">
-            🏪 {product.vendorId.storeName}
-          </p>
-        )}
+        {/* Store name — clickable link to vendor store */}
+          {product.vendorId?.storeName && (
+            <Link
+              to={`/store/${product.vendorId._id}`}
+              className="text-xs text-slate-400 hover:text-blue-600 hover:underline mb-2 inline-block transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              🏪 {product.vendorId.storeName}
+            </Link>
+          )}
 
         <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
           <span className="text-lg font-black text-blue-600">

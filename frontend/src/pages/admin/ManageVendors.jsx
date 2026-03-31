@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import Loader from "../../components/Loader";
 
@@ -486,6 +487,24 @@ const ManageVendors = () => {
                         {/* Actions */}
                         <td className="px-5 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
+                            {/* View Store */}
+                            <Link
+                              to={`/admin/vendors/${vendor._id}/store`}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:text-white hover:bg-slate-600 border border-slate-200 hover:border-slate-600 rounded-lg transition-all duration-150">
+                              <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}>
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35"
+                                />
+                              </svg>
+                              Store
+                            </Link>
                             {/* View Profile */}
                             <button
                               onClick={() => setViewingVendor(vendor)}

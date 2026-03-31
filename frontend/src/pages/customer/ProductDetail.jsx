@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../../api/axios";
+import ReviewsSection from "./ReviewsSection";
 
 const PLACEHOLDER = "https://placehold.co/600x400?text=No+Image";
 
@@ -409,6 +410,9 @@ const ProductDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* ── Reviews Section ── */}
+      <ReviewsSection productId={id} />
 
       {/* ── Toast ── */}
       {toast && (

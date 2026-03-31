@@ -41,8 +41,9 @@ const ReviewsSection = ({ productId }) => {
   const [formMessage, setFormMessage] = useState({ text: "", type: "" });
 
   // Check if user is logged in as customer
-  const user = JSON.parse(localStorage.getItem("ondemand_user") || "null");
-  const isCustomer = user?.role === "customer";
+  const token = localStorage.getItem("ondemand_token");
+  const isCustomer = !!token;
+  const user = null; // kept for delete button compatibility
 
   const fetchReviews = async () => {
     try {

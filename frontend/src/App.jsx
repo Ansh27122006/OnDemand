@@ -15,7 +15,7 @@ import BrowseProducts from "./pages/customer/BrowseProducts";
 import BrowseServices from "./pages/customer/BrowseServices";
 import ProductDetail from "./pages/customer/ProductDetail";
 import ServiceDetail from "./pages/customer/ServiceDetail";
-import VendorStore from './pages/VendorStore';
+import VendorStore from "./pages/VendorStore";
 
 // Customer pages
 import Home from "./pages/customer/Home";
@@ -24,9 +24,6 @@ import MyOrders from "./pages/customer/MyOrders";
 import MyBookings from "./pages/customer/MyBookings";
 import Wishlist from "./pages/customer/Wishlist";
 import OrderDetail from "./pages/customer/OrderDetail";
-
-
-
 
 // Vendor pages
 import VendorDashboard from "./pages/vendor/VendorDashboard";
@@ -42,8 +39,7 @@ import ManageVendors from "./pages/admin/ManageVendors";
 import ManageUsers from "./pages/admin/ManageUsers";
 import AdminManageProducts from "./pages/admin/AdminManageProducts";
 import AdminManageServices from "./pages/admin/AdminManageServices";
-
-
+import AdminVendorStore from "./pages/admin/AdminVendorStore";
 
 const App = () => {
   const location = useLocation();
@@ -87,9 +83,9 @@ const App = () => {
           element={<ServiceDetail />}
         />
         <Route
-            path="/store/:vendorId"
-            element={<VendorStore />} 
-          />
+          path="/store/:vendorId"
+          element={<VendorStore />}
+        />
         {/* ── Protected Routes (Customer, Vendor, Admin) ── */}
         <Route
           element={
@@ -118,12 +114,14 @@ const App = () => {
             path="/customer/bookings"
             element={<MyBookings />}
           />
-        <Route path="/customer/wishlist" 
-        element={<Wishlist />}
-         />
-         <Route path="/customer/orders/:id"
-          element={<OrderDetail />}
-           />
+          <Route
+            path="/customer/wishlist"
+            element={<Wishlist />}
+          />
+          <Route
+            path="/customer/orders/:id"
+            element={<OrderDetail />}
+          />
         </Route>
 
         {/* ── Vendor Only ── */}
@@ -176,6 +174,10 @@ const App = () => {
         <Route
           path="/admin/services"
           element={<AdminManageServices />}
+        />
+        <Route
+          path="/admin/vendors/:id/store"
+          element={<AdminVendorStore />}
         />
       </Routes>
       <Footer />

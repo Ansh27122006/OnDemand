@@ -114,8 +114,9 @@ const placeOrder = async (req, res) => {
 const getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ customerId: req.user._id })
-      .populate("vendorId", "storeName")
-      .sort({ createdAt: -1 });
+  .populate("vendorId", "storeName")
+  .populate("items.productId", "name")
+  .sort({ createdAt: -1 });
 
     return res.status(200).json(orders);
   } catch (error) {

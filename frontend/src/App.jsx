@@ -21,6 +21,8 @@ import Home from "./pages/customer/Home";
 import Cart from "./pages/customer/Cart";
 import MyOrders from "./pages/customer/MyOrders";
 import MyBookings from "./pages/customer/MyBookings";
+import Wishlist from "./pages/customer/Wishlist";
+
 
 // Vendor pages
 import VendorDashboard from "./pages/vendor/VendorDashboard";
@@ -36,6 +38,8 @@ import ManageVendors from "./pages/admin/ManageVendors";
 import ManageUsers from "./pages/admin/ManageUsers";
 import AdminManageProducts from "./pages/admin/AdminManageProducts";
 import AdminManageServices from "./pages/admin/AdminManageServices";
+
+
 
 const App = () => {
   const location = useLocation();
@@ -106,6 +110,9 @@ const App = () => {
             path="/customer/bookings"
             element={<MyBookings />}
           />
+        <Route path="/customer/wishlist" 
+        element={<Wishlist />}
+         />
         </Route>
 
         {/* ── Vendor Only ── */}

@@ -10,6 +10,7 @@ const navConfig = {
       { label: "Products", to: "/products" },
       { label: "Services", to: "/services" },
       { label: "Cart", to: "/customer/cart" },
+      { label: "My Wishlist", to: "/customer/wishlist" },
     ],
     dropdown: [
       { label: "My Orders", to: "/customer/orders" },

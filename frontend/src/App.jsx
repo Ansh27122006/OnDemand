@@ -23,6 +23,9 @@ import Cart from "./pages/customer/Cart";
 import MyOrders from "./pages/customer/MyOrders";
 import MyBookings from "./pages/customer/MyBookings";
 import Wishlist from "./pages/customer/Wishlist";
+import OrderDetail from "./pages/customer/OrderDetail";
+
+
 
 
 // Vendor pages
@@ -118,6 +121,9 @@ const App = () => {
         <Route path="/customer/wishlist" 
         element={<Wishlist />}
          />
+         <Route path="/customer/orders/:id"
+          element={<OrderDetail />}
+           />
         </Route>
 
         {/* ── Vendor Only ── */}

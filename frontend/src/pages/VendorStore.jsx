@@ -14,7 +14,7 @@ const VendorStore = () => {
   useEffect(() => {
     const fetchStore = async () => {
       try {
-        const { data } = await api.get(`/vendor/${vendorId}/store`);
+        const { data } = await api.get(`/vendors/${vendorId}/store`);
         setStore(data.vendor);
         setProducts(data.products);
         setServices(data.services);
@@ -110,7 +110,7 @@ const VendorStore = () => {
                 {products.map((product) => (
                   <div key={product._id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
                     <img
-                      src={product.image || "https://via.placeholder.com/200x150?text=No+Image"}
+                      src={product.images?.[0] || "https://via.placeholder.com/200x150?text=No+Image"}
                       alt={product.name}
                       className="w-full h-36 object-cover"
                     />
@@ -142,7 +142,7 @@ const VendorStore = () => {
                 {services.map((service) => (
                   <div key={service._id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
                     <img
-                      src={service.image || "https://via.placeholder.com/200x150?text=No+Image"}
+                      src={service.images?.[0] || "https://via.placeholder.com/200x150?text=No+Image"}
                       alt={service.name}
                       className="w-full h-36 object-cover"
                     />

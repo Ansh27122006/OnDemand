@@ -79,6 +79,10 @@ const App = () => {
           path="/services/:id"
           element={<ServiceDetail />}
         />
+        <Route
+            path="/store/:vendorId"
+            element={<VendorStore />} 
+          />
         {/* ── Protected Routes (Customer, Vendor, Admin) ── */}
         <Route
           element={
@@ -134,10 +138,6 @@ const App = () => {
           <Route
             path="/vendor/profile"
             element={<VendorProfile />}
-          />
-          <Route
-            path="/store/:vendorId"
-            element={<VendorStore />} 
           />
         </Route>
 

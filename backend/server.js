@@ -16,6 +16,8 @@ const cartRoutes = require("./routes/cartRoutes.js");
 const orderRoutes = require("./routes/orderRoutes.js");
 const bookingRoutes = require("./routes/bookingRoutes.js");
 const adminRoutes = require("./routes/adminRoutes.js");
+const wishlistRoutes = require("./routes/wishlistRoutes.js");
+
 const reviewRoutes = require('./routes/reviewRoutes.js');
 
 // Connect to MongoDB
@@ -43,6 +45,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/reviews", reviewRoutes);
 
 // Start server

@@ -1,5 +1,6 @@
 const VendorProfile = require("../models/VendorsProfile");
-
+const Product = require("../models/Product");   
+const Service = require("../models/Service");  
 // @desc    Create a vendor profile
 // @route   POST /api/vendors
 // @access  Private (vendor)
@@ -107,9 +108,40 @@ const getAllApprovedVendors = async (req, res) => {
   }
 };
 
+const getVendorStore = async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+
+    // Search by VendorProfile _id OR by userId — handles both cases
+    let vendor = await VendorProfile.findById(vendorId).populate('userId', 'name');
+    
+    if (!vendor) {
+      vendor = await VendorProfile.findOne({ userId: vendorId }).populate('userId', 'name');
+    }
+
+    if (!vendor || !vendor.isApproved) {
+      return res.status(404).json({ message: 'Store not found' });
+    }
+
+    const [products, services] = await Promise.all([
+      Product.find({ vendorId: vendor._id }),
+      Service.find({ vendorId: vendor._id }),
+    ]);
+
+    res.status(200).json({ vendor, products, services });
+  } catch (error) {
+    console.error('getVendorStore error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
 module.exports = {
   createVendorProfile,
   getVendorProfile,
   updateVendorProfile,
   getAllApprovedVendors,
+  getVendorStore, 
 };
+
+

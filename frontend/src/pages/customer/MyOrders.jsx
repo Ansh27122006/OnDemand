@@ -134,9 +134,16 @@ function OrderCard({ order, index }) {
         <span className="text-xs text-slate-400">
           {items.length} item{items.length !== 1 ? "s" : ""}
         </span>
-        <span className="text-base font-bold text-slate-900">
-          Rs. {order.totalAmount}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-base font-bold text-slate-900">
+            Rs. {order.totalAmount}
+          </span>
+          <Link
+            to={`/customer/orders/${order._id}`}
+            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors">
+            View Details
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -18,31 +18,40 @@ const orderItemSchema = new mongoose.Schema({
   },
 });
 
-const orderSchema = new mongoose.Schema({
-  customerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
+const orderSchema = new mongoose.Schema(
+  {
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    vendorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "VendorProfile",
+      required: true,
+    },
+    items: [orderItemSchema],
+    status: {
+      type: String,
+      enum: ["pending", "confirmed", "delivered", "cancelled"],
+      default: "pending",
+    },
+    couponCode: {
+      type: String,
+      default: "",
+    },
+    discountAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
   },
-  vendorId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "VendorProfile",
-    required: true,
-  },
-  items: [orderItemSchema],
-  totalAmount: {
-    type: Number,
-    required: true,
-  },
-  status: {
-    type: String,
-    enum: ["pending", "confirmed", "delivered", "cancelled"],
-    default: "pending",
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
+  { timestamps: true } // adds createdAt + updatedAt automatically
+);
 
 module.exports = mongoose.model("Order", orderSchema);

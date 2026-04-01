@@ -26,6 +26,7 @@ const navConfig = {
       { label: "Manage Services", to: "/vendor/services" },
       { label: "Manage Orders", to: "/vendor/orders" },
       { label: "Manage Bookings", to: "/vendor/bookings" },
+      { label: "Manage Coupons", to: "/vendor/coupons" },
       { label: "Edit Profile", to: "/profile/edit" },
     ],
   },

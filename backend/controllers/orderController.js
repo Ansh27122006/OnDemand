@@ -163,6 +163,7 @@ const getVendorOrders = async (req, res) => {
 
     const orders = await Order.find({ vendorId: vendorProfile._id })
       .populate("customerId", "name email")
+      .populate("items.productId", "name price")
       .sort({ createdAt: -1 });
 
     return res.status(200).json(orders);

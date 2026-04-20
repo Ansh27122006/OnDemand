@@ -87,7 +87,6 @@ export default function VendorDashboard() {
         const profileData = profileRes.data;
         setProfile(profileData);
 
-        // Fetch products, services, orders, and bookings with error handling for each
         let productsArr = [];
         let servicesArr = [];
         let ordersArr = [];
@@ -99,7 +98,6 @@ export default function VendorDashboard() {
             ? productsRes.data
             : productsRes.data.products || [];
         } catch (err) {
-          // Silently handle - vendor may not have products yet
           productsArr = [];
         }
 
@@ -109,7 +107,6 @@ export default function VendorDashboard() {
             ? servicesRes.data
             : servicesRes.data.services || [];
         } catch (err) {
-          // Silently handle - vendor may not have services yet
           servicesArr = [];
         }
 
@@ -135,8 +132,7 @@ export default function VendorDashboard() {
           products: productsArr.length,
           services: servicesArr.length,
           pendingOrders: ordersArr.filter((o) => o.status === "pending").length,
-          pendingBookings: bookingsArr.filter((b) => b.status === "pending")
-            .length,
+          pendingBookings: bookingsArr.filter((b) => b.status === "pending").length,
         });
 
         setRecentOrders([...ordersArr].reverse().slice(0, 5));
@@ -208,39 +204,18 @@ export default function VendorDashboard() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-10">
-          <StatCard
-            icon="📦"
-            label="Total Products"
-            value={stats.products}
-            accent="bg-blue-50 text-blue-600"
-          />
-          <StatCard
-            icon="🛠️"
-            label="Total Services"
-            value={stats.services}
-            accent="bg-violet-50 text-violet-600"
-          />
-          <StatCard
-            icon="🛒"
-            label="Pending Orders"
-            value={stats.pendingOrders}
-            accent="bg-amber-50 text-amber-600"
-          />
-          <StatCard
-            icon="📅"
-            label="Pending Bookings"
-            value={stats.pendingBookings}
-            accent="bg-emerald-50 text-emerald-600"
-          />
+          <StatCard icon="📦" label="Total Products" value={stats.products} accent="bg-blue-50 text-blue-600" />
+          <StatCard icon="🛠️" label="Total Services" value={stats.services} accent="bg-violet-50 text-violet-600" />
+          <StatCard icon="🛒" label="Pending Orders" value={stats.pendingOrders} accent="bg-amber-50 text-amber-600" />
+          <StatCard icon="📅" label="Pending Bookings" value={stats.pendingBookings} accent="bg-emerald-50 text-emerald-600" />
         </div>
 
+        {/* ── Recent Orders ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-lg">🛒</span>
-              <h2 className="text-base font-bold text-gray-800">
-                Recent Orders
-              </h2>
+              <h2 className="text-base font-bold text-gray-800">Recent Orders</h2>
             </div>
             <span className="text-xs text-gray-400 font-medium">Last 5</span>
           </div>
@@ -254,48 +229,32 @@ export default function VendorDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50/70">
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Items
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Total
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Items</th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {recentOrders.map((order, i) => (
-                    <tr
-                      key={order._id || i}
-                      className="hover:bg-blue-50/30 transition-colors duration-100">
+                    <tr key={order._id || i} className="hover:bg-blue-50/30 transition-colors duration-100">
                       <td className="px-6 py-4 font-medium text-gray-800">
-                        {order.customer?.name ||
+                        {/* ✅ FIXED — reads customerId.name from backend */}
+                        {order.customerId?.name ||
+                          order.customer?.name ||
                           order.customerName ||
-                          order.userId?.name ||
                           "Unknown"}
                       </td>
                       <td className="px-6 py-4 text-gray-500">
                         {order.items?.length ?? order.itemCount ?? "—"}
-                        {order.items?.length ?? order.itemCount
-                          ? " item(s)"
-                          : ""}
+                        {order.items?.length ?? order.itemCount ? " item(s)" : ""}
                       </td>
                       <td className="px-6 py-4 font-semibold text-gray-700">
                         {formatCurrency(order.totalAmount ?? order.total)}
                       </td>
                       <td className="px-6 py-4">
-                        <StatusBadge
-                          status={order.status}
-                          type="order"
-                        />
+                        <StatusBadge status={order.status} type="order" />
                       </td>
                       <td className="px-6 py-4 text-gray-400">
                         {formatDate(order.createdAt)}
@@ -308,13 +267,12 @@ export default function VendorDashboard() {
           )}
         </div>
 
+        {/* ── Recent Bookings ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-lg">📅</span>
-              <h2 className="text-base font-bold text-gray-800">
-                Recent Bookings
-              </h2>
+              <h2 className="text-base font-bold text-gray-800">Recent Bookings</h2>
             </div>
             <span className="text-xs text-gray-400 font-medium">Last 5</span>
           </div>
@@ -328,29 +286,20 @@ export default function VendorDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50/70">
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Service
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Scheduled
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Service</th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Scheduled</th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {recentBookings.map((booking, i) => (
-                    <tr
-                      key={booking._id || i}
-                      className="hover:bg-blue-50/30 transition-colors duration-100">
+                    <tr key={booking._id || i} className="hover:bg-blue-50/30 transition-colors duration-100">
                       <td className="px-6 py-4 font-medium text-gray-800">
-                        {booking.customer?.name ||
+                        {/* ✅ FIXED — reads customerId.name from backend */}
+                        {booking.customerId?.name ||
+                          booking.customer?.name ||
                           booking.customerName ||
-                          booking.userId?.name ||
                           "Unknown"}
                       </td>
                       <td className="px-6 py-4 text-gray-600">
@@ -360,17 +309,10 @@ export default function VendorDashboard() {
                           "—"}
                       </td>
                       <td className="px-6 py-4 text-gray-400">
-                        {formatDate(
-                          booking.scheduledDate ||
-                            booking.date ||
-                            booking.bookingDate
-                        )}
+                        {formatDate(booking.scheduledDate || booking.date || booking.bookingDate)}
                       </td>
                       <td className="px-6 py-4">
-                        <StatusBadge
-                          status={booking.status}
-                          type="booking"
-                        />
+                        <StatusBadge status={booking.status} type="booking" />
                       </td>
                     </tr>
                   ))}
@@ -379,6 +321,7 @@ export default function VendorDashboard() {
             </div>
           )}
         </div>
+
       </div>
     </div>
   );

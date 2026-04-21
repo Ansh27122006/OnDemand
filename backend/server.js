@@ -18,18 +18,39 @@ const bookingRoutes = require("./routes/bookingRoutes.js");
 const adminRoutes = require("./routes/adminRoutes.js");
 const wishlistRoutes = require("./routes/wishlistRoutes.js");
 const couponRoutes = require("./routes/couponRoutes.js");
-
 const reviewRoutes = require("./routes/reviewRoutes.js");
+const chatRoutes = require("./routes/chatRoutes.js"); // ← NEW
+
+// ── Socket.io setup ────────────────────────────────────────────────────────
+const http = require("http"); // ← NEW
+const { Server } = require("socket.io"); // ← NEW
+const socketHandler = require("./socketHandler"); // ← NEW
+// ──────────────────────────────────────────────────────────────────────────
 
 // Connect to MongoDB
 connectDB();
 
 const app = express();
 
+// ── Create HTTP server and attach Socket.io ────────────────────────────────
+const server = http.createServer(app); // ← NEW
+
+const io = new Server(server, {
+  // ← NEW
+  cors: {
+    // ← NEW
+    origin: process.env.FRONTEND_URL || "http://localhost:5173", // ← NEW
+    methods: ["GET", "POST"], // ← NEW
+  }, // ← NEW
+}); // ← NEW
+
+socketHandler(io); // ← NEW
+// ──────────────────────────────────────────────────────────────────────────
+
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: true,
   })
 );
@@ -39,7 +60,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/vendors", vendorRoutes); // plural to match frontend & spec
+app.use("/api/vendors", vendorRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/cart", cartRoutes);
@@ -49,10 +70,11 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/coupons", couponRoutes);
+app.use("/api/chat", chatRoutes); // ← NEW
 
-// Start server
-const PORT = process.env.PORT || 5000;
 // Global error handler
+const PORT = process.env.PORT || 5000;
+
 app.use((err, req, res, next) => {
   console.error("Error:", err);
 
@@ -74,6 +96,8 @@ app.use((req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+// ── server.listen instead of app.listen ───────────────────────────────────
+server.listen(PORT, () => {
+  // ← CHANGED
   console.log(`Server running on port ${PORT}`);
 });

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // ← added useNavigate
 import api from "../../api/axios";
 import Loader from "../../components/Loader";
 
@@ -237,6 +237,8 @@ const ProfileModal = ({ vendor, onClose }) => (
    ManageVendors Page
 ══════════════════════════════════════════ */
 const ManageVendors = () => {
+  const navigate = useNavigate(); // ← added
+
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -505,6 +507,7 @@ const ManageVendors = () => {
                               </svg>
                               Store
                             </Link>
+
                             {/* View Profile */}
                             <button
                               onClick={() => setViewingVendor(vendor)}
@@ -528,6 +531,29 @@ const ManageVendors = () => {
                               </svg>
                               View
                             </button>
+
+                            {/* ── Chat button (navigates to /chat/:vendorUserId) ── */}
+                            {vendor.userId?._id && (
+                              <button
+                                onClick={() =>
+                                  navigate(`/chat/${vendor.userId._id}`)
+                                }
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-blue-600 hover:text-white hover:bg-blue-600 border border-blue-200 hover:border-blue-600 rounded-lg transition-all duration-150">
+                                <svg
+                                  className="w-3.5 h-3.5"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={2}>
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.84L3 20l1.09-3.27C3.4 15.46 3 13.77 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                                  />
+                                </svg>
+                                Chat
+                              </button>
+                            )}
 
                             {/* Approve / Reject */}
                             {!vendor.isApproved ? (

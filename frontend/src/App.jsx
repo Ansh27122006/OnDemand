@@ -42,6 +42,10 @@ import AdminManageProducts from "./pages/admin/AdminManageProducts";
 import AdminManageServices from "./pages/admin/AdminManageServices";
 import AdminVendorStore from "./pages/admin/AdminVendorStore";
 
+//chat pages
+import Conversations from "./pages/Conversations";
+import Chat from "./pages/Chat";
+
 const App = () => {
   const location = useLocation();
   const hideNavbar = ["/login", "/register"].includes(location.pathname);
@@ -184,6 +188,21 @@ const App = () => {
           path="/admin/vendors/:id/store"
           element={<AdminVendorStore />}
         />
+
+        {/* ── Chat Routes (Protected for all authenticated users) ── */}
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={["customer", "vendor", "admin"]} />
+          }>
+          <Route
+            path="/conversations"
+            element={<Conversations />}
+          />
+          <Route
+            path="/chat/:receiverId"
+            element={<Chat />}
+          />
+        </Route>
       </Routes>
       <Footer />
     </>

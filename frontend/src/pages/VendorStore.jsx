@@ -214,7 +214,6 @@ const VendorStore = () => {
               </p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-<<<<<<< HEAD
                 {services.map((service) => {
                   const { finalPrice, discount, isStoreSale } = getDiscountedPrice(service, store);
                   return (
@@ -253,35 +252,6 @@ const VendorStore = () => {
                           View Service
                         </Link>
                       </div>
-=======
-                {services.map((service) => (
-                  <div
-                    key={service._id}
-                    className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
-                    <img
-                      src={
-                        service.images?.[0] ||
-                        "https://via.placeholder.com/200x150?text=No+Image"
-                      }
-                      alt={service.name}
-                      className="w-full h-36 object-cover"
-                    />
-                    <div className="p-3">
-                      <h3 className="font-semibold text-gray-800 text-sm truncate">
-                        {service.name}
-                      </h3>
-                      <p className="text-blue-600 font-bold text-sm mt-1">
-                        Rs. {service.price}
-                      </p>
-                      <p className="text-gray-400 text-xs">
-                        {service.duration} hrs · {service.category}
-                      </p>
-                      <Link
-                        to={`/services/${service._id}`}
-                        className="mt-2 block text-center bg-blue-600 text-white text-xs py-1.5 rounded-lg hover:bg-blue-700">
-                        View Service
-                      </Link>
->>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
                     </div>
                   );
                 })}

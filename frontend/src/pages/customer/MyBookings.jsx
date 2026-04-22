@@ -27,6 +27,12 @@ const STATUS_MAP = {
     classes: "bg-green-100 text-green-700 ring-1 ring-green-300",
     dot: "bg-green-500",
   },
+  // ✅ NEW — expired status
+  expired: {
+    label: "Expired",
+    classes: "bg-red-100 text-red-700 ring-1 ring-red-300",
+    dot: "bg-red-500",
+  },
 };
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -46,6 +52,14 @@ function BookingCard({ booking, index }) {
   const serviceName = booking.serviceId?.name ?? "Service";
   const storeName = booking.vendorId?.storeName ?? "Unknown Store";
 
+  // ✅ NEW — if booking is pending and scheduled date has passed → show as expired
+  const isExpired =
+    booking.status === "pending" &&
+    booking.scheduledDate &&
+    new Date(booking.scheduledDate) < new Date();
+
+  const displayStatus = isExpired ? "expired" : booking.status;
+
   return (
     <div
       className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
@@ -60,7 +74,8 @@ function BookingCard({ booking, index }) {
             {serviceName}
           </h3>
         </div>
-        <StatusBadge status={booking.status} />
+        {/* ✅ FIXED — uses displayStatus instead of booking.status */}
+        <StatusBadge status={displayStatus} />
       </div>
 
       {/* Body */}
@@ -105,32 +120,10 @@ function BookingCard({ booking, index }) {
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={1.8}>
-              <rect
-                x="3"
-                y="4"
-                width="18"
-                height="18"
-                rx="2"
-                ry="2"
-              />
-              <line
-                x1="16"
-                y1="2"
-                x2="16"
-                y2="6"
-              />
-              <line
-                x1="8"
-                y1="2"
-                x2="8"
-                y2="6"
-              />
-              <line
-                x1="3"
-                y1="10"
-                x2="21"
-                y2="10"
-              />
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           </div>
           <div>
@@ -249,7 +242,6 @@ export default function MyBookings() {
       .get("/bookings/my")
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : [];
-        // Newest first
         const sorted = [...data].sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );

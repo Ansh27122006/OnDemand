@@ -1,6 +1,7 @@
 const VendorProfile = require("../models/VendorsProfile");
 const Product = require("../models/Product");   
 const Service = require("../models/Service");  
+
 // @desc    Create a vendor profile
 // @route   POST /api/vendors
 // @access  Private (vendor)
@@ -15,7 +16,6 @@ const createVendorProfile = async (req, res) => {
         .json({ message: "Vendor profile already exists for this user" });
     }
 
-    // use uploaded file URL if present, else body logo, else undefined
     const logoUrl = req.file ? req.file.secure_url : logo || undefined;
 
     const profile = await VendorProfile.create({
@@ -81,7 +81,6 @@ const updateVendorProfile = async (req, res) => {
       }
     });
 
-    // if a new file was uploaded, override logo with it
     if (req.file) {
       profile.logo = req.file.secure_url;
     }
@@ -108,11 +107,13 @@ const getAllApprovedVendors = async (req, res) => {
   }
 };
 
+// @desc    Get vendor store (products + services)
+// @route   GET /api/vendors/:vendorId/store
+// @access  Public
 const getVendorStore = async (req, res) => {
   try {
     const { vendorId } = req.params;
 
-    // Search by VendorProfile _id OR by userId — handles both cases
     let vendor = await VendorProfile.findById(vendorId).populate('userId', 'name');
     
     if (!vendor) {
@@ -128,20 +129,55 @@ const getVendorStore = async (req, res) => {
       Service.find({ vendorId: vendor._id }),
     ]);
 
-    res.status(200).json({ vendor, products, services });
+    // Attach vendor sale info directly onto each product/service
+    const vendorSaleInfo = { onSale: vendor.onSale, salePercentage: vendor.salePercentage };
+    const productsWithVendor = products.map(p => ({ ...p.toObject(), vendorId: { ...vendorSaleInfo, _id: vendor._id, storeName: vendor.storeName } }));
+    const servicesWithVendor = services.map(s => ({ ...s.toObject(), vendorId: { ...vendorSaleInfo, _id: vendor._id, storeName: vendor.storeName } }));
+
+    res.status(200).json({ vendor, products: productsWithVendor, services: servicesWithVendor });
   } catch (error) {
     console.error('getVendorStore error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
+// @desc    Toggle store sale on/off
+// @route   PUT /api/vendors/toggle-sale
+// @access  Vendor only
+const toggleSale = async (req, res) => {
+  try {
+    const vendor = await VendorProfile.findOne({ userId: req.user._id });
+
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor profile not found" });
+    }
+
+    if (vendor.onSale) {
+      // Turn sale OFF
+      vendor.onSale = false;
+      vendor.salePercentage = 0;
+    } else {
+      // Turn sale ON
+      const { salePercentage } = req.body;
+      if (!salePercentage || salePercentage === 0) {
+        return res.status(400).json({ message: "Please provide a sale percentage" });
+      }
+      vendor.onSale = true;
+      vendor.salePercentage = salePercentage;
+    }
+
+    await vendor.save();
+    res.status(200).json(vendor);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
 
 module.exports = {
   createVendorProfile,
   getVendorProfile,
   updateVendorProfile,
   getAllApprovedVendors,
-  getVendorStore, 
+  getVendorStore,
+  toggleSale,
 };
-
-

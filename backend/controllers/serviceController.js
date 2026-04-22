@@ -27,6 +27,7 @@ const addService = async (req, res) => {
       duration,
       availability,
       images,
+      discountPercentage,
     } = req.body;
 
     const serviceImages = req.file
@@ -46,6 +47,7 @@ const addService = async (req, res) => {
       duration,
       availability,
       images: serviceImages,
+      discountPercentage: discountPercentage || 0,
     });
 
     const savedService = await service.save();
@@ -76,6 +78,7 @@ const getAllServices = async (req, res) => {
     const services = await Service.find(filter).populate({
       path: "vendorId",
       match: { isApproved: true },
+      select: "storeName isApproved onSale salePercentage",
     });
 
     const approvedServices = services.filter((s) => s.vendorId !== null);
@@ -90,7 +93,10 @@ const getAllServices = async (req, res) => {
 // @access  Public
 const getServiceById = async (req, res) => {
   try {
-    const service = await Service.findById(req.params.id).populate("vendorId");
+    const service = await Service.findById(req.params.id).populate({
+      path: "vendorId",
+      select: "storeName isApproved onSale salePercentage",
+    });
 
     if (!service) {
       return res.status(404).json({ message: "Service not found" });
@@ -137,6 +143,7 @@ const updateService = async (req, res) => {
       "duration",
       "availability",
       "images",
+      "discountPercentage",
     ];
     allowedUpdates.forEach((field) => {
       if (req.body[field] !== undefined) {
@@ -252,7 +259,7 @@ const getServicesByCategory = async (req, res) => {
     }).populate({
       path: "vendorId",
       match: { isApproved: true },
-      select: "storeName isApproved",
+      select: "storeName isApproved onSale salePercentage",
     });
 
     const filtered = services.filter((s) => s.vendorId !== null);

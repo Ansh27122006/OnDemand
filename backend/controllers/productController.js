@@ -12,7 +12,6 @@ const addProduct = async (req, res) => {
       return res.status(404).json({ message: "Vendor profile not found" });
     }
 
-    // Check if vendor is approved
     if (!vendorProfile.isApproved) {
       return res.status(403).json({
         message:
@@ -20,7 +19,7 @@ const addProduct = async (req, res) => {
       });
     }
 
-    const { name, description, price, category, images, stock } = req.body;
+    const { name, description, price, category, images, stock, discountPercentage } = req.body;
 
     const product = new Product({
       vendorId: vendorProfile._id,
@@ -30,6 +29,7 @@ const addProduct = async (req, res) => {
       category,
       images,
       stock,
+      discountPercentage: discountPercentage || 0,
     });
 
     const savedProduct = await product.save();
@@ -66,9 +66,9 @@ const getAllProducts = async (req, res) => {
     const products = await Product.find(filter).populate({
       path: "vendorId",
       match: { isApproved: true },
+      select: "storeName isApproved onSale salePercentage",
     });
 
-    // Only return items whose vendor passed the approval match
     const approvedProducts = products.filter((p) => p.vendorId !== null);
 
     res.status(200).json(approvedProducts);
@@ -82,13 +82,15 @@ const getAllProducts = async (req, res) => {
 // @access  Public
 const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate("vendorId");
+    const product = await Product.findById(req.params.id).populate({
+      path: "vendorId",
+      select: "storeName isApproved onSale salePercentage",
+    });
 
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // vendor may have been unapproved after product creation
     if (!product.vendorId?.isApproved) {
       return res.status(403).json({ message: "This product is not available" });
     }
@@ -129,6 +131,7 @@ const updateProduct = async (req, res) => {
       "category",
       "images",
       "stock",
+      "discountPercentage",
     ];
     allowedUpdates.forEach((field) => {
       if (req.body[field] !== undefined) {
@@ -175,7 +178,7 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-// @desc    Get all products for the logged-in vendor (their own products)
+// @desc    Get all products for the logged-in vendor
 // @route   GET /api/products/my/list
 // @access  Vendor only
 const getMyProducts = async (req, res) => {
@@ -244,7 +247,7 @@ const getProductsByCategory = async (req, res) => {
     }).populate({
       path: "vendorId",
       match: { isApproved: true },
-      select: "storeName isApproved",
+      select: "storeName isApproved onSale salePercentage",
     });
 
     const filtered = products.filter((p) => p.vendorId !== null);

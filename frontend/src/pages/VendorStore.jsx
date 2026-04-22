@@ -3,6 +3,15 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 
+const getDiscountedPrice = (item, vendor) => {
+  const productDiscount = item.discountPercentage || 0;
+  const storeDiscount = vendor?.onSale ? (vendor.salePercentage || 0) : 0;
+  const effectiveDiscount = Math.max(productDiscount, storeDiscount);
+  if (effectiveDiscount === 0) return { finalPrice: item.price, discount: 0, isStoreSale: false };
+  const finalPrice = Math.round(item.price - (item.price * effectiveDiscount / 100));
+  return { finalPrice, discount: effectiveDiscount, isStoreSale: vendor?.onSale && storeDiscount >= productDiscount };
+};
+
 const VendorStore = () => {
   const { vendorId } = useParams();
   const navigate = useNavigate();
@@ -62,7 +71,6 @@ const VendorStore = () => {
       {/* Store Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center gap-6">
-          {/* Avatar */}
           <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-white text-3xl font-bold flex-shrink-0">
             {store.storeName?.charAt(0).toUpperCase()}
           </div>
@@ -76,6 +84,11 @@ const VendorStore = () => {
               <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">
                 ✓ Verified Store
               </span>
+              {store.onSale && (
+                <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                  🏷️ STORE SALE — {store.salePercentage}% OFF
+                </span>
+              )}
             </div>
             <span className="inline-block mt-1 bg-blue-100 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full">
               {store.businessCategory}
@@ -146,36 +159,47 @@ const VendorStore = () => {
               </p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {products.map((product) => (
-                  <div
-                    key={product._id}
-                    className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
-                    <img
-                      src={
-                        product.images?.[0] ||
-                        "https://via.placeholder.com/200x150?text=No+Image"
-                      }
-                      alt={product.name}
-                      className="w-full h-36 object-cover"
-                    />
-                    <div className="p-3">
-                      <h3 className="font-semibold text-gray-800 text-sm truncate">
-                        {product.name}
-                      </h3>
-                      <p className="text-blue-600 font-bold text-sm mt-1">
-                        Rs. {product.price}
-                      </p>
-                      <p className="text-gray-400 text-xs">
-                        {product.category}
-                      </p>
-                      <Link
-                        to={`/products/${product._id}`}
-                        className="mt-2 block text-center bg-blue-600 text-white text-xs py-1.5 rounded-lg hover:bg-blue-700">
-                        View Product
-                      </Link>
+                {products.map((product) => {
+                  const { finalPrice, discount, isStoreSale } = getDiscountedPrice(product, store);
+                  return (
+                    <div key={product._id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
+                      <div className="relative">
+                        <img
+                          src={product.images?.[0] || "https://via.placeholder.com/200x150?text=No+Image"}
+                          alt={product.name}
+                          className="w-full h-36 object-cover"
+                        />
+                        {discount > 0 && (
+                          <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            {discount}% OFF
+                          </span>
+                        )}
+                        {isStoreSale && (
+                          <span className="absolute bottom-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            STORE SALE
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-3">
+                        <h3 className="font-semibold text-gray-800 text-sm truncate">{product.name}</h3>
+                        {discount > 0 ? (
+                          <div className="mt-1">
+                            <span className="text-green-600 font-bold text-sm">Rs. {finalPrice}</span>
+                            <span className="text-gray-400 text-xs line-through ml-1">Rs. {product.price}</span>
+                          </div>
+                        ) : (
+                          <p className="text-blue-600 font-bold text-sm mt-1">Rs. {product.price}</p>
+                        )}
+                        <p className="text-gray-400 text-xs">{product.category}</p>
+                        <Link
+                          to={`/products/${product._id}`}
+                          className="mt-2 block text-center bg-blue-600 text-white text-xs py-1.5 rounded-lg hover:bg-blue-700">
+                          View Product
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
@@ -190,6 +214,46 @@ const VendorStore = () => {
               </p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+<<<<<<< HEAD
+                {services.map((service) => {
+                  const { finalPrice, discount, isStoreSale } = getDiscountedPrice(service, store);
+                  return (
+                    <div key={service._id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
+                      <div className="relative">
+                        <img
+                          src={service.images?.[0] || "https://via.placeholder.com/200x150?text=No+Image"}
+                          alt={service.name}
+                          className="w-full h-36 object-cover"
+                        />
+                        {discount > 0 && (
+                          <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            {discount}% OFF
+                          </span>
+                        )}
+                        {isStoreSale && (
+                          <span className="absolute bottom-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            STORE SALE
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-3">
+                        <h3 className="font-semibold text-gray-800 text-sm truncate">{service.name}</h3>
+                        {discount > 0 ? (
+                          <div className="mt-1">
+                            <span className="text-green-600 font-bold text-sm">Rs. {finalPrice}</span>
+                            <span className="text-gray-400 text-xs line-through ml-1">Rs. {service.price}</span>
+                          </div>
+                        ) : (
+                          <p className="text-blue-600 font-bold text-sm mt-1">Rs. {service.price}</p>
+                        )}
+                        <p className="text-gray-400 text-xs">{service.duration} hrs · {service.category}</p>
+                        <Link
+                          to={`/services/${service._id}`}
+                          className="mt-2 block text-center bg-blue-600 text-white text-xs py-1.5 rounded-lg hover:bg-blue-700">
+                          View Service
+                        </Link>
+                      </div>
+=======
                 {services.map((service) => (
                   <div
                     key={service._id}
@@ -217,9 +281,10 @@ const VendorStore = () => {
                         className="mt-2 block text-center bg-blue-600 text-white text-xs py-1.5 rounded-lg hover:bg-blue-700">
                         View Service
                       </Link>
+>>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>

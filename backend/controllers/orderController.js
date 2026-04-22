@@ -20,6 +20,8 @@ const getDiscountedPrice = (product) => {
 // ─────────────────────────────────────────────
 const placeOrder = async (req, res) => {
   try {
+    const { couponCode, discountAmount: rawDiscount } = req.body;
+
     const cart = await Cart.findOne({ customerId: req.user._id }).populate({
       path: "items.productId",
       populate: { path: "vendorId", select: "onSale salePercentage" },
@@ -45,7 +47,26 @@ const placeOrder = async (req, res) => {
       }
     }
 
-    // group items by vendor
+    // Normalise discount — default to 0 if no coupon was supplied
+    const discountAmount = couponCode ? rawDiscount ?? 0 : 0;
+
+    // Compute the cart-wide subtotal upfront so we can validate the discount
+    const cartSubtotal = cart.items.reduce(
+      (sum, item) => sum + item.productId.price * item.quantity,
+      0
+    );
+
+    if (discountAmount > cartSubtotal) {
+      return res.status(400).json({
+        message: `Discount amount (${discountAmount}) cannot exceed the order subtotal (${cartSubtotal}).`,
+      });
+    }
+
+    /**
+     * Split the cart into separate orders per vendor.
+     * The discount is distributed proportionally across vendor sub-orders
+     * so that the sum of all vendor totals equals (subtotal - discount).
+     */
     const itemsByVendor = {};
     cart.items.forEach((item) => {
       const vendorId = item.productId.vendorId._id
@@ -70,16 +91,24 @@ const placeOrder = async (req, res) => {
         };
       });
 
-      const vendorTotal = itemsSnapshot.reduce(
+      const vendorSubtotal = itemsSnapshot.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
       );
+
+      // Distribute discount proportionally: each vendor bears their share
+      // e.g. vendor contributes 40 % of cart → absorbs 40 % of discount
+      const vendorDiscount =
+        cartSubtotal > 0 ? (vendorSubtotal / cartSubtotal) * discountAmount : 0;
+
+      const vendorTotal = vendorSubtotal - vendorDiscount;
 
       const order = await Order.create({
         customerId: req.user._id,
         vendorId,
         items: itemsSnapshot,
         totalAmount: vendorTotal,
+        ...(couponCode && { couponCode, discountAmount: vendorDiscount }),
         status: "pending",
       });
 
@@ -138,6 +167,7 @@ const getVendorOrders = async (req, res) => {
 
     const orders = await Order.find({ vendorId: vendorProfile._id })
       .populate("customerId", "name email")
+      .populate("items.productId", "name price")
       .sort({ createdAt: -1 });
 
     return res.status(200).json(orders);

@@ -147,6 +147,163 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, updating }) => {
   );
 };
 
+/* ── Coupon Section ── */
+const CouponSection = ({
+  subtotal,
+  cartItems,
+  appliedCoupon,
+  onApply,
+  onRemove,
+}) => {
+  const [code, setCode] = useState("");
+  const [validating, setValidating] = useState(false);
+  const [error, setCouponError] = useState("");
+
+  // Clear input error when user starts typing again
+  const handleChange = (e) => {
+    setCode(e.target.value.toUpperCase());
+    if (error) setCouponError("");
+  };
+
+  const handleApply = async () => {
+    const trimmed = code.trim();
+    if (!trimmed) return setCouponError("Please enter a coupon code.");
+
+    // vendorId comes from the first item in the cart
+    const vendorId =
+      cartItems[0]?.productId?.vendorId?._id ||
+      cartItems[0]?.productId?.vendorId;
+    if (!vendorId)
+      return setCouponError("Unable to determine vendor. Try refreshing.");
+
+    setValidating(true);
+    setCouponError("");
+    try {
+      const res = await api.post("/coupons/validate", {
+        code: trimmed,
+        vendorId,
+        cartTotal: subtotal,
+      });
+      // API is expected to return: { discountAmount, couponCode } or similar
+      const { discountAmount, couponCode } = res.data;
+      onApply({ code: couponCode || trimmed, discountAmount });
+      setCode("");
+    } catch (err) {
+      setCouponError(
+        err.response?.data?.message || "Invalid or expired coupon code."
+      );
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleApply();
+  };
+
+  // ── Coupon already applied state
+  if (appliedCoupon) {
+    return (
+      <div className="rounded-xl border border-green-200 bg-green-50 p-4 flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+              <svg
+                className="w-3 h-3 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={3}>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <span className="text-sm font-bold text-green-800 font-mono tracking-widest">
+              {appliedCoupon.code}
+            </span>
+          </div>
+          <button
+            onClick={onRemove}
+            className="text-xs text-green-700 hover:text-red-500 font-semibold underline underline-offset-2 transition-colors shrink-0">
+            Remove
+          </button>
+        </div>
+        <p className="text-xs text-green-700 font-medium pl-7">
+          🎉 Coupon applied! You save ₹{appliedCoupon.discountAmount.toFixed(2)}
+        </p>
+      </div>
+    );
+  }
+
+  // ── Input state
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        Have a coupon?
+      </p>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={code}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Enter code"
+          className={`flex-1 px-3 py-2 text-sm font-mono font-semibold tracking-widest rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder:font-sans placeholder:font-normal placeholder:tracking-normal ${
+            error ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"
+          }`}
+        />
+        <button
+          onClick={handleApply}
+          disabled={validating}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors shrink-0 flex items-center gap-1.5">
+          {validating ? (
+            <svg
+              className="animate-spin w-3.5 h-3.5"
+              fill="none"
+              viewBox="0 0 24 24">
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth={4}
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v8z"
+              />
+            </svg>
+          ) : (
+            "Apply"
+          )}
+        </button>
+      </div>
+      {error && (
+        <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">
+          <svg
+            className="w-3.5 h-3.5 shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"
+            />
+          </svg>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
+
 /* ══════════════════════════════════════════
    Cart Page
 ══════════════════════════════════════════ */
@@ -161,6 +318,10 @@ const Cart = () => {
   const [placing, setPlacing] = useState(false);
   const [toast, setToast] = useState(null);
 
+  // ── Coupon state
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discountAmount }
+
+  // Redirect to login if not authenticated
   useEffect(() => {
     if (!user) navigate("/login", { replace: true });
   }, [user, navigate]);
@@ -187,6 +348,16 @@ const Cart = () => {
     return () => clearTimeout(t);
   }, [toast]);
 
+<<<<<<< HEAD
+=======
+  // Clear coupon whenever cart items change (stock/quantity change can invalidate it)
+  useEffect(() => {
+    if (appliedCoupon) setAppliedCoupon(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartItems.length]);
+
+  // ── Increase quantity
+>>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
   const handleIncrease = async (itemId, currentQty) => {
     setUpdating(itemId);
     const newQty = currentQty + 1;
@@ -229,10 +400,19 @@ const Cart = () => {
     }
   };
 
+<<<<<<< HEAD
+=======
+  // ── Place Order — now includes coupon fields when applied
+>>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
   const handlePlaceOrder = async () => {
     setPlacing(true);
     try {
-      await api.post("/orders");
+      const body = {};
+      if (appliedCoupon) {
+        body.couponCode = appliedCoupon.code;
+        body.discountAmount = appliedCoupon.discountAmount;
+      }
+      await api.post("/orders", body);
       navigate("/customer/orders", { state: { orderSuccess: true } });
     } catch (err) {
       const msg = err.response?.data?.message || "Failed to place order. Please try again.";
@@ -242,17 +422,27 @@ const Cart = () => {
     }
   };
 
+<<<<<<< HEAD
   // ── Totals using discounted prices
   const total = cartItems.reduce((sum, item) => {
     return sum + getItemPrice(item) * item.quantity;
   }, 0);
 
   const originalTotal = cartItems.reduce((sum, item) => {
+=======
+  // ── Totals
+  const subtotal = cartItems.reduce((sum, item) => {
+>>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
     const price = parseFloat(item.productId?.price || item.price || 0);
     return sum + price * item.quantity;
   }, 0);
 
+<<<<<<< HEAD
   const totalSavings = originalTotal - total;
+=======
+  const discount = appliedCoupon?.discountAmount ?? 0;
+  const total = Math.max(0, subtotal - discount);
+>>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   if (!user) return null;
@@ -334,10 +524,13 @@ const Cart = () => {
                   })}
                 </div>
 
+                {/* Subtotal / Discount / Total */}
                 <div className="border-t border-slate-100 pt-4 space-y-2 text-sm">
                   <div className="flex justify-between text-slate-600">
                     <span>Subtotal</span>
-                    <span className="font-semibold">₹{total.toFixed(2)}</span>
+                    <span className="font-semibold">
+                      ₹{subtotal.toFixed(2)}
+                    </span>
                   </div>
                   {totalSavings > 0 && (
                     <div className="flex justify-between text-green-600">
@@ -349,12 +542,60 @@ const Cart = () => {
                     <span>Shipping</span>
                     <span className="text-green-600 font-semibold">Free</span>
                   </div>
+                  {/* Discount row — only rendered when a coupon is applied */}
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-green-600">
+                      <span className="flex items-center gap-1">
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                          />
+                        </svg>
+                        Discount ({appliedCoupon.code})
+                      </span>
+                      <span className="font-semibold">
+                        − ₹{discount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Total */}
                 <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
                   <span className="font-black text-slate-900">Total</span>
+<<<<<<< HEAD
                   <span className="text-xl font-black text-blue-600">₹{total.toFixed(2)}</span>
+=======
+                  <div className="text-right">
+                    <span className="text-xl font-black text-blue-600">
+                      ₹{total.toFixed(2)}
+                    </span>
+                    {/* Strike-through original total when discount is active */}
+                    {appliedCoupon && (
+                      <p className="text-xs text-slate-400 line-through mt-0.5">
+                        ₹{subtotal.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Coupon Section ── */}
+                <div className="border-t border-slate-100 pt-4">
+                  <CouponSection
+                    subtotal={subtotal}
+                    cartItems={cartItems}
+                    appliedCoupon={appliedCoupon}
+                    onApply={setAppliedCoupon}
+                    onRemove={() => setAppliedCoupon(null)}
+                  />
+>>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
                 </div>
 
                 {/* Place Order */}

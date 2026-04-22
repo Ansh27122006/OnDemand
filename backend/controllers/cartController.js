@@ -15,7 +15,10 @@ const cartPopulate = {
 // @access  Customer (protected)
 const getCart = async (req, res) => {
   try {
-    const cart = await Cart.findOne({ customerId: req.user._id }).populate(cartPopulate);
+    const cart = await Cart.findOne({ customerId: req.user._id }).populate(
+      "items.productId",
+      "name price images"
+    );
 
     if (!cart) {
       return res.status(200).json({ customerId: req.user._id, items: [] });
@@ -63,7 +66,7 @@ const addToCart = async (req, res) => {
       await cart.save();
     }
 
-    await cart.populate(cartPopulate);
+    await cart.populate("items.productId", "name price images");
 
     res.status(200).json(cart);
   } catch (error) {
@@ -93,7 +96,7 @@ const updateCartItem = async (req, res) => {
     item.quantity = quantity;
     await cart.save();
 
-    await cart.populate(cartPopulate);
+    await cart.populate("items.productId", "name price images");
 
     res.status(200).json(cart);
   } catch (error) {
@@ -121,7 +124,7 @@ const removeCartItem = async (req, res) => {
     cart.items.pull({ _id: req.params.itemId });
     await cart.save();
 
-    await cart.populate(cartPopulate);
+    await cart.populate("items.productId", "name price images");
 
     res.status(200).json(cart);
   } catch (error) {

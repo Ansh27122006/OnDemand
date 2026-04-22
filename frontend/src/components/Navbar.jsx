@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useSocket } from "../context/SocketContext"; // ← added
+import api from "../api/axios"; // ← added
 
 /* ── Role-based nav config ── */
 const navConfig = {
@@ -15,6 +17,7 @@ const navConfig = {
     dropdown: [
       { label: "My Orders", to: "/customer/orders" },
       { label: "My Bookings", to: "/customer/bookings" },
+      { label: "Messages", to: "/conversations" }, // ← added
       { label: "Edit Profile", to: "/profile/edit" },
     ],
   },
@@ -26,6 +29,8 @@ const navConfig = {
       { label: "Manage Services", to: "/vendor/services" },
       { label: "Manage Orders", to: "/vendor/orders" },
       { label: "Manage Bookings", to: "/vendor/bookings" },
+      { label: "Manage Coupons", to: "/vendor/coupons" },
+      { label: "Messages", to: "/conversations" }, // ← added
       { label: "Edit Profile", to: "/profile/edit" },
     ],
   },
@@ -37,6 +42,7 @@ const navConfig = {
       { label: "Manage Users", to: "/admin/users" },
       { label: "Manage Products", to: "/admin/products" },
       { label: "Manage Services", to: "/admin/services" },
+      { label: "Messages", to: "/conversations" }, // ← added
       { label: "Edit Profile", to: "/profile/edit" },
     ],
   },
@@ -100,19 +106,96 @@ const Avatar = ({ name }) => {
   );
 };
 
+/* ── Unread badge ── */
+const UnreadBadge = ({ count }) => {
+  if (!count || count < 1) return null;
+  return (
+    <span className="ml-auto min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+};
+
+/* ── Helper: sum unread counts for the current user across all conversations ── */
+const sumUnread = (conversations, userId) => {
+  if (!userId) return 0;
+  const key = userId.toString();
+  return conversations.reduce((total, conv) => {
+    const counts = conv.unreadCount;
+    if (!counts) return total;
+    // unreadCount arrives as a plain object over JSON (Mongoose Map serialises to {})
+    const val =
+      typeof counts.get === "function"
+        ? counts.get(key) || 0
+        : counts[key] || 0;
+    return total + val;
+  }, 0);
+};
+
 /* ══════════════════════════════════════════
    Main Navbar Component
 ══════════════════════════════════════════ */
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { socket } = useSocket(); // ← added
   const navigate = useNavigate();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [totalUnread, setTotalUnread] = useState(0); // ← added
 
   const dropdownRef = useRef(null);
-
   const config = user ? navConfig[user.role] : null;
+
+  // ── Fetch initial unread count on mount / login ────────────────────────
+  useEffect(() => {
+    if (!user) {
+      setTotalUnread(0);
+      return;
+    }
+    const fetchUnread = async () => {
+      try {
+        const { data } = await api.get("/chat/conversations");
+        setTotalUnread(sumUnread(data.conversations, user._id));
+      } catch {
+        // Non-critical — badge simply won't show if request fails
+      }
+    };
+    fetchUnread();
+  }, [user]);
+
+  // ── Real-time unread updates via socket ────────────────────────────────
+  useEffect(() => {
+    if (!socket || !user) return;
+
+    const onConversationUpdated = (updated) => {
+      // Re-fetch the full list so the sum stays accurate across all conversations.
+      // Using a lightweight local update avoids managing a full conversations array here.
+      api
+        .get("/chat/conversations")
+        .then(({ data }) =>
+          setTotalUnread(sumUnread(data.conversations, user._id))
+        )
+        .catch(() => {});
+    };
+
+    // When user opens a chat and marks messages as read
+    const onUnreadCleared = () => {
+      api
+        .get("/chat/conversations")
+        .then(({ data }) =>
+          setTotalUnread(sumUnread(data.conversations, user._id))
+        )
+        .catch(() => {});
+    };
+
+    socket.on("conversation_updated", onConversationUpdated);
+    socket.on("unread_cleared", onUnreadCleared);
+    return () => {
+      socket.off("conversation_updated", onConversationUpdated);
+      socket.off("unread_cleared", onUnreadCleared);
+    };
+  }, [socket, user]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -125,7 +208,6 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close mobile menu on route change
   const handleNavClick = () => {
     setMobileOpen(false);
     setDropdownOpen(false);
@@ -134,6 +216,7 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     handleNavClick();
+    setTotalUnread(0);
     navigate("/");
   };
 
@@ -208,6 +291,10 @@ const Navbar = () => {
                 <span className="text-sm font-semibold text-slate-700 max-w-[120px] truncate">
                   {user.name}
                 </span>
+                {/* Unread dot on avatar button when dropdown is closed */}
+                {totalUnread > 0 && !dropdownOpen && (
+                  <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                )}
                 <ChevronDown open={dropdownOpen} />
               </button>
 
@@ -227,7 +314,7 @@ const Navbar = () => {
                     </span>
                   </div>
 
-                  {/* Dropdown links */}
+                  {/* Dropdown links — Messages gets an inline unread badge */}
                   {config.dropdown.map((item) => (
                     <Link
                       key={item.to}
@@ -235,6 +322,9 @@ const Navbar = () => {
                       onClick={() => setDropdownOpen(false)}
                       className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors">
                       {item.label}
+                      {item.to === "/conversations" && (
+                        <UnreadBadge count={totalUnread} />
+                      )}
                     </Link>
                   ))}
 
@@ -323,14 +413,17 @@ const Navbar = () => {
                 </Link>
               ))}
 
-              {/* Dropdown items */}
+              {/* Dropdown items — Messages gets an inline unread badge */}
               {config.dropdown.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
                   onClick={handleNavClick}
-                  className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                   {item.label}
+                  {item.to === "/conversations" && (
+                    <UnreadBadge count={totalUnread} />
+                  )}
                 </Link>
               ))}
 

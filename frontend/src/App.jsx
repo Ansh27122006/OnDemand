@@ -15,7 +15,7 @@ import BrowseProducts from "./pages/customer/BrowseProducts";
 import BrowseServices from "./pages/customer/BrowseServices";
 import ProductDetail from "./pages/customer/ProductDetail";
 import ServiceDetail from "./pages/customer/ServiceDetail";
-import VendorStore from './pages/VendorStore';
+import VendorStore from "./pages/VendorStore";
 
 // Customer pages
 import Home from "./pages/customer/Home";
@@ -25,9 +25,6 @@ import MyBookings from "./pages/customer/MyBookings";
 import Wishlist from "./pages/customer/Wishlist";
 import OrderDetail from "./pages/customer/OrderDetail";
 
-
-
-
 // Vendor pages
 import VendorDashboard from "./pages/vendor/VendorDashboard";
 import ManageProducts from "./pages/vendor/ManageProducts";
@@ -35,6 +32,7 @@ import ManageServices from "./pages/vendor/ManageServices";
 import ManageOrders from "./pages/vendor/ManageOrders";
 import ManageBookings from "./pages/vendor/ManageBookings";
 import VendorProfile from "./pages/vendor/VendorProfile";
+import ManageCoupons from "./pages/vendor/ManageCoupons";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -42,8 +40,11 @@ import ManageVendors from "./pages/admin/ManageVendors";
 import ManageUsers from "./pages/admin/ManageUsers";
 import AdminManageProducts from "./pages/admin/AdminManageProducts";
 import AdminManageServices from "./pages/admin/AdminManageServices";
+import AdminVendorStore from "./pages/admin/AdminVendorStore";
 
-
+//chat pages
+import Conversations from "./pages/Conversations";
+import Chat from "./pages/Chat";
 
 const App = () => {
   const location = useLocation();
@@ -87,9 +88,9 @@ const App = () => {
           element={<ServiceDetail />}
         />
         <Route
-            path="/store/:vendorId"
-            element={<VendorStore />} 
-          />
+          path="/store/:vendorId"
+          element={<VendorStore />}
+        />
         {/* ── Protected Routes (Customer, Vendor, Admin) ── */}
         <Route
           element={
@@ -118,12 +119,14 @@ const App = () => {
             path="/customer/bookings"
             element={<MyBookings />}
           />
-        <Route path="/customer/wishlist" 
-        element={<Wishlist />}
-         />
-         <Route path="/customer/orders/:id"
-          element={<OrderDetail />}
-           />
+          <Route
+            path="/customer/wishlist"
+            element={<Wishlist />}
+          />
+          <Route
+            path="/customer/orders/:id"
+            element={<OrderDetail />}
+          />
         </Route>
 
         {/* ── Vendor Only ── */}
@@ -152,6 +155,10 @@ const App = () => {
             path="/vendor/profile"
             element={<VendorProfile />}
           />
+          <Route
+            path="/vendor/coupons"
+            element={<ManageCoupons />}
+          />
         </Route>
 
         {/* ── Admin Only ── */}
@@ -177,6 +184,25 @@ const App = () => {
           path="/admin/services"
           element={<AdminManageServices />}
         />
+        <Route
+          path="/admin/vendors/:id/store"
+          element={<AdminVendorStore />}
+        />
+
+        {/* ── Chat Routes (Protected for all authenticated users) ── */}
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={["customer", "vendor", "admin"]} />
+          }>
+          <Route
+            path="/conversations"
+            element={<Conversations />}
+          />
+          <Route
+            path="/chat/:receiverId"
+            element={<Chat />}
+          />
+        </Route>
       </Routes>
       <Footer />
     </>

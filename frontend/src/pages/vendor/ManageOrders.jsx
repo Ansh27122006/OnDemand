@@ -322,7 +322,9 @@ const ManageOrders = () => {
                   filteredOrders.map((order) => {
                     const orderId = order._id?.slice(0, 8).toUpperCase() || "—";
                     const customer =
-                      order.userId?.name || order.customerName || "Unknown";
+                      order.customerId?.name ||
+                      order.customerId?.email ||
+                      "Unknown";
                     const items = order.items || [];
                     const total = parseFloat(
                       order.totalAmount || order.total || 0
@@ -392,7 +394,7 @@ const ManageOrders = () => {
                         {/* Total */}
                         <td className="px-5 py-4 whitespace-nowrap">
                           <span className="font-black text-slate-800">
-                            ${total}
+                            ₹{total}
                           </span>
                         </td>
 

@@ -37,9 +37,6 @@ const Field = ({
   </div>
 );
 
-/* ══════════════════════════════════════════
-   Toast
-══════════════════════════════════════════ */
 const Toast = ({ message, type, onClose }) => {
   useEffect(() => {
     const t = setTimeout(onClose, 3500);
@@ -55,18 +52,13 @@ const Toast = ({ message, type, onClose }) => {
       }`}>
       <span className="text-lg">{type === "success" ? "✅" : "❌"}</span>
       {message}
-      <button
-        onClick={onClose}
-        className="ml-2 text-current opacity-50 hover:opacity-100">
+      <button onClick={onClose} className="ml-2 text-current opacity-50 hover:opacity-100">
         ✕
       </button>
     </div>
   );
 };
 
-/* ══════════════════════════════════════════
-   ConfirmDialog
-══════════════════════════════════════════ */
 const ConfirmDialog = ({ itemName, onConfirm, onCancel }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
     <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center border border-gray-100">
@@ -95,15 +87,13 @@ const ConfirmDialog = ({ itemName, onConfirm, onCancel }) => (
   </div>
 );
 
-/* ══════════════════════════════════════════
-   ProductModal
-══════════════════════════════════════════ */
 const EMPTY_FORM = {
   name: "",
   description: "",
   price: "",
   category: "",
   stock: "",
+  discountPercentage: 0,
 };
 
 const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
@@ -115,12 +105,11 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
           price: editProduct.price ?? "",
           category: editProduct.category || "",
           stock: editProduct.stock ?? "",
+          discountPercentage: editProduct.discountPercentage ?? 0,
         }
       : EMPTY_FORM
   );
   const [errors, setErrors] = useState({});
-
-  // ── ADDED: image file and preview state
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(
     editProduct?.images?.[0] || null
@@ -129,18 +118,10 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = "Product name is required";
-    if (
-      form.price === "" ||
-      isNaN(Number(form.price)) ||
-      Number(form.price) < 0
-    )
+    if (form.price === "" || isNaN(Number(form.price)) || Number(form.price) < 0)
       e.price = "Valid price is required";
     if (!form.category.trim()) e.category = "Category is required";
-    if (
-      form.stock === "" ||
-      isNaN(Number(form.stock)) ||
-      Number(form.stock) < 0
-    )
+    if (form.stock === "" || isNaN(Number(form.stock)) || Number(form.stock) < 0)
       e.stock = "Valid stock quantity is required";
     return e;
   };
@@ -151,7 +132,6 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
-  // ── ADDED: handle image file selection and preview
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -159,7 +139,6 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
     setImagePreview(URL.createObjectURL(file));
   };
 
-  // ── ADDED: clear selected image
   const handleRemoveImage = () => {
     setImageFile(null);
     setImagePreview(editProduct?.images?.[0] || null);
@@ -172,7 +151,6 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
       setErrors(errs);
       return;
     }
-    // ── CHANGED: pass imageFile as second argument
     onSubmit(
       {
         name: form.name,
@@ -180,6 +158,7 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
         price: Number(form.price),
         category: form.category,
         stock: Number(form.stock),
+        discountPercentage: Number(form.discountPercentage) || 0,
       },
       imageFile
     );
@@ -190,29 +169,21 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100 overflow-hidden">
-        {/* Header */}
         <div className="px-6 py-5 flex items-center justify-between bg-gradient-to-r from-violet-600 to-violet-700">
           <div>
             <h2 className="text-lg font-bold text-white">
               {editProduct ? "Edit Product" : "Add New Product"}
             </h2>
             <p className="text-violet-200 text-xs mt-0.5">
-              {editProduct
-                ? "Update product details"
-                : "Fill in the product details below"}
+              {editProduct ? "Update product details" : "Fill in the product details below"}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-white/70 hover:text-white text-xl">
+          <button onClick={onClose} className="text-white/70 hover:text-white text-xl">
             ✕
           </button>
         </div>
 
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
           <Field
             label="Product Name"
             name="name"
@@ -251,6 +222,24 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
             />
           </div>
 
+          {/* Discount Field */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              Discount (%)
+            </label>
+            <input
+              type="number"
+              name="discountPercentage"
+              value={form.discountPercentage}
+              onChange={handleChange}
+              placeholder="0"
+              min="0"
+              max="99"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400"
+            />
+            <p className="text-xs text-gray-400 mt-1">0 means no discount</p>
+          </div>
+
           {/* Category */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
@@ -261,43 +250,21 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
               value={form.category}
               onChange={handleChange}
               className={`w-full px-4 py-2.5 rounded-xl border text-sm bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-violet-500/30 ${
-                errors.category
-                  ? "border-red-300"
-                  : "border-gray-200 focus:border-violet-400"
+                errors.category ? "border-red-300" : "border-gray-200 focus:border-violet-400"
               }`}>
               <option value="">Select a category</option>
               {[
-                "Electronics & Gadgets",
-                "Food & Beverages",
-                "Home Services",
-                "Fashion & Clothing",
-                "Health & Beauty",
-                "Education & Training",
-                "Repair & Maintenance",
-                "IT & Technology",
-                "Healthcare & Medical",
-                "Transportation & Logistics",
-                "Construction & Real Estate",
-                "Financial Services",
-                "Events & Entertainment",
-                "Marketing & Advertising",
-                "Cleaning Services",
-                "Security Services",
-                "Legal Services",
-                "Photography & Media",
-                "Sports & Fitness",
-                "Automotive",
-                "Pet Services",
-                "Rental Services",
-                "Agriculture",
-                "Childcare & Senior Care",
-                "Other",
+                "Electronics & Gadgets", "Food & Beverages", "Home Services",
+                "Fashion & Clothing", "Health & Beauty", "Education & Training",
+                "Repair & Maintenance", "IT & Technology", "Healthcare & Medical",
+                "Transportation & Logistics", "Construction & Real Estate",
+                "Financial Services", "Events & Entertainment", "Marketing & Advertising",
+                "Cleaning Services", "Security Services", "Legal Services",
+                "Photography & Media", "Sports & Fitness", "Automotive",
+                "Pet Services", "Rental Services", "Agriculture",
+                "Childcare & Senior Care", "Other",
               ].map((cat) => (
-                <option
-                  key={cat}
-                  value={cat}>
-                  {cat}
-                </option>
+                <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
             {errors.category && (
@@ -305,20 +272,14 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
             )}
           </div>
 
-          {/* ── ADDED: Image Upload Field ── */}
+          {/* Image Upload */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
               Product Image
             </label>
-
-            {/* Preview */}
             {imagePreview && (
               <div className="relative mb-2 w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                />
+                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                 <button
                   type="button"
                   onClick={handleRemoveImage}
@@ -327,20 +288,9 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
                 </button>
               </div>
             )}
-
-            {/* File input */}
             <label className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border border-dashed border-gray-300 hover:border-violet-400 bg-gray-50 hover:bg-violet-50/30 cursor-pointer transition-colors">
-              <svg
-                className="w-4 h-4 text-gray-400 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
-                />
+              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
               </svg>
               <span className="text-sm text-gray-400">
                 {imageFile ? imageFile.name : "Click to upload an image"}
@@ -352,9 +302,7 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
                 className="hidden"
               />
             </label>
-            <p className="text-xs text-gray-400 mt-1">
-              JPG, PNG or WebP. Max 5MB.
-            </p>
+            <p className="text-xs text-gray-400 mt-1">JPG, PNG or WebP. Max 5MB.</p>
           </div>
 
           <div className="flex gap-3 pt-2">
@@ -380,9 +328,6 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
   );
 };
 
-/* ══════════════════════════════════════════
-   ManageProducts (main page)
-══════════════════════════════════════════ */
 export default function ManageProducts() {
   const { user } = useAuth();
   const [vendorId, setVendorId] = useState(null);
@@ -425,7 +370,6 @@ export default function ManageProducts() {
     init();
   }, [fetchProducts]);
 
-  // ── CHANGED: accept imageFile as second argument and use FormData
   const handleSubmit = async (formFields, imageFile) => {
     const isEdit = modal?.mode === "edit";
     try {
@@ -437,6 +381,7 @@ export default function ManageProducts() {
       formData.append("price", formFields.price);
       formData.append("category", formFields.category);
       formData.append("stock", formFields.stock);
+      formData.append("discountPercentage", formFields.discountPercentage);
       formData.append("vendorId", vendorId);
       if (imageFile) formData.append("image", imageFile);
 
@@ -478,11 +423,7 @@ export default function ManageProducts() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/20 to-white">
       {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
       )}
       {modal && (
         <ProductModal
@@ -512,9 +453,7 @@ export default function ManageProducts() {
               <p className="text-gray-400 text-sm mt-0.5">
                 {loading
                   ? "Loading…"
-                  : `${products.length} product${
-                      products.length !== 1 ? "s" : ""
-                    } in your store`}
+                  : `${products.length} product${products.length !== 1 ? "s" : ""} in your store`}
               </p>
             </div>
           </div>
@@ -542,26 +481,16 @@ export default function ManageProducts() {
         {/* Approval banner */}
         {profile && !profile.isApproved && (
           <div className="mb-6 px-5 py-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-            <svg
-              className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}>
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"
-              />
+            <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
             </svg>
             <span className="text-amber-800 font-semibold text-sm">
-              Your vendor account is pending admin approval. You can't add
-              products until approved.
+              Your vendor account is pending admin approval. You can't add products until approved.
             </span>
           </div>
         )}
 
-        {/* Table card */}
+        {/* Table */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -592,28 +521,23 @@ export default function ManageProducts() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50/80 border-b border-gray-100">
-                    {["Product", "Category", "Price", "Stock", "Actions"].map(
-                      (h) => (
-                        <th
-                          key={h}
-                          className={`px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider ${
-                            h === "Actions" ? "text-right" : "text-left"
-                          }`}>
-                          {h}
-                        </th>
-                      )
-                    )}
+                    {["Product", "Category", "Price", "Stock", "Discount", "Actions"].map((h) => (
+                      <th
+                        key={h}
+                        className={`px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider ${
+                          h === "Actions" ? "text-right" : "text-left"
+                        }`}>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {products.map((product) => (
-                    <tr
-                      key={product._id}
-                      className="hover:bg-violet-50/20 transition-colors">
+                    <tr key={product._id} className="hover:bg-violet-50/20 transition-colors">
                       {/* Product */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          {/* ── CHANGED: show product image thumbnail if available */}
                           {product.images?.[0] ? (
                             <img
                               src={product.images[0]}
@@ -626,9 +550,7 @@ export default function ManageProducts() {
                             </div>
                           )}
                           <div>
-                            <p className="font-semibold text-gray-800">
-                              {product.name}
-                            </p>
+                            <p className="font-semibold text-gray-800">{product.name}</p>
                             {product.description && (
                               <p className="text-xs text-gray-400 line-clamp-1 max-w-xs">
                                 {product.description}
@@ -656,6 +578,17 @@ export default function ManageProducts() {
                           <span className="text-base">📊</span>
                           {product.stock ?? "—"} units
                         </span>
+                      </td>
+
+                      {/* Discount */}
+                      <td className="px-6 py-4">
+                        {product.discountPercentage > 0 ? (
+                          <span className="px-2.5 py-1 rounded-lg bg-green-50 text-green-700 text-xs font-semibold">
+                            {product.discountPercentage}% OFF
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">—</span>
+                        )}
                       </td>
 
                       {/* Actions */}

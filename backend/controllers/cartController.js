@@ -1,15 +1,21 @@
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 
+const cartPopulate = {
+  path: "items.productId",
+  select: "name price images category discountPercentage vendorId",
+  populate: {
+    path: "vendorId",
+    select: "storeName onSale salePercentage",
+  },
+};
+
 // @desc    Get cart for logged-in customer
 // @route   GET /api/cart
 // @access  Customer (protected)
 const getCart = async (req, res) => {
   try {
-    const cart = await Cart.findOne({ customerId: req.user._id }).populate(
-      "items.productId",
-      "name price images"
-    );
+    const cart = await Cart.findOne({ customerId: req.user._id }).populate(cartPopulate);
 
     if (!cart) {
       return res.status(200).json({ customerId: req.user._id, items: [] });
@@ -28,21 +34,17 @@ const addToCart = async (req, res) => {
   try {
     const { productId, quantity } = req.body;
 
-    // check product exists and stock
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
     if (product.stock !== undefined && product.stock < quantity) {
-      return res.status(400).json({
-        message: `Only ${product.stock} units available`,
-      });
+      return res.status(400).json({ message: `Only ${product.stock} units available` });
     }
 
     let cart = await Cart.findOne({ customerId: req.user._id });
 
     if (!cart) {
-      // No cart yet — create one with this item
       cart = await Cart.create({
         customerId: req.user._id,
         items: [{ productId, quantity }],
@@ -53,17 +55,15 @@ const addToCart = async (req, res) => {
       );
 
       if (existingItem) {
-        // Item already in cart — increase quantity
         existingItem.quantity += quantity;
       } else {
-        // New item — push to array
         cart.items.push({ productId, quantity });
       }
 
       await cart.save();
     }
 
-    await cart.populate("items.productId", "name price images");
+    await cart.populate(cartPopulate);
 
     res.status(200).json(cart);
   } catch (error) {
@@ -93,7 +93,7 @@ const updateCartItem = async (req, res) => {
     item.quantity = quantity;
     await cart.save();
 
-    await cart.populate("items.productId", "name price images");
+    await cart.populate(cartPopulate);
 
     res.status(200).json(cart);
   } catch (error) {
@@ -121,7 +121,7 @@ const removeCartItem = async (req, res) => {
     cart.items.pull({ _id: req.params.itemId });
     await cart.save();
 
-    await cart.populate("items.productId", "name price images");
+    await cart.populate(cartPopulate);
 
     res.status(200).json(cart);
   } catch (error) {

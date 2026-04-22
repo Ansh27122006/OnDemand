@@ -6,6 +6,7 @@ const {
   updateVendorProfile,
   getAllApprovedVendors,
   getVendorStore,
+  toggleSale,
 } = require("../controllers/vendorController");
 const { protect, authorizeRoles } = require("../middleware/authMiddleware");
 const VendorProfile = require("../models/VendorsProfile");
@@ -40,22 +41,6 @@ router.post(
   createVendorProfile
 );
 
-/**
- * @swagger
- * /vendors/profile:
- *   get:
- *     summary: Get the vendor profile for the currently logged-in vendor
- *     tags: [Vendors]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Vendor profile for the logged-in user
- *       404:
- *         description: Vendor profile not found
- *       500:
- *         description: Server error
- */
 // ⚠️ MUST be defined before /:id so Express doesn't treat "profile" as an id param
 router.get("/profile", protect, async (req, res) => {
   try {
@@ -78,12 +63,22 @@ router.get("/profile", protect, async (req, res) => {
       location: profile.location,
       logo: profile.logo,
       isApproved: profile.isApproved,
+      onSale: profile.onSale,
+      salePercentage: profile.salePercentage,
       userId: profile.userId,
     });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
+
+// ⚠️ MUST be before /:id
+router.put(
+  "/toggle-sale",
+  protect,
+  authorizeRoles("vendor"),
+  toggleSale
+);
 
 router.get("/:vendorId/store", getVendorStore);
 

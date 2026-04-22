@@ -3,6 +3,16 @@ const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const VendorProfile = require("../models/VendorsProfile");
 
+// helper — same logic as frontend
+const getDiscountedPrice = (product) => {
+  const productDiscount = product.discountPercentage || 0;
+  const storeDiscount = product.vendorId?.onSale ? (product.vendorId.salePercentage || 0) : 0;
+  const effectiveDiscount = Math.max(productDiscount, storeDiscount);
+  if (effectiveDiscount === 0) return { finalPrice: product.price, discount: 0 };
+  const finalPrice = Math.round(product.price - (product.price * effectiveDiscount / 100));
+  return { finalPrice, discount: effectiveDiscount };
+};
+
 // ─────────────────────────────────────────────
 // @desc    Place a new order from the customer's cart
 // @route   POST /api/orders
@@ -10,9 +20,10 @@ const VendorProfile = require("../models/VendorsProfile");
 // ─────────────────────────────────────────────
 const placeOrder = async (req, res) => {
   try {
-    const cart = await Cart.findOne({ customerId: req.user._id }).populate(
-      "items.productId"
-    );
+    const cart = await Cart.findOne({ customerId: req.user._id }).populate({
+      path: "items.productId",
+      populate: { path: "vendorId", select: "onSale salePercentage" },
+    });
 
     if (!cart || cart.items.length === 0) {
       return res.status(400).json({ message: "Your cart is empty." });
@@ -22,17 +33,11 @@ const placeOrder = async (req, res) => {
     for (const item of cart.items) {
       const product = item.productId;
       if (!product) {
-        return res.status(404).json({
-          message: `Product ${item.productId} not found`,
-        });
+        return res.status(404).json({ message: `Product ${item.productId} not found` });
       }
-
       if (product.stock === undefined || product.stock === null) {
-        return res.status(400).json({
-          message: `Product "${product.name}" does not have stock information`,
-        });
+        return res.status(400).json({ message: `Product "${product.name}" does not have stock information` });
       }
-
       if (product.stock < item.quantity) {
         return res.status(400).json({
           message: `Insufficient stock for "${product.name}". Available: ${product.stock}, Requested: ${item.quantity}`,
@@ -40,33 +45,30 @@ const placeOrder = async (req, res) => {
       }
     }
 
-    /**
-     * Split the cart into separate orders per vendor.
-     * Previously we derived a single vendor ID from the first item,
-     * which meant mixed-vendor carts would only create an order for
-     * the first vendor and drop everything else (BUG #12).
-     *
-     * The new logic groups items by their `vendorId` and then
-     * creates one Order document for each vendor-group.
-     */
+    // group items by vendor
     const itemsByVendor = {};
     cart.items.forEach((item) => {
-      const vendorId = item.productId.vendorId.toString();
-      if (!itemsByVendor[vendorId]) {
-        itemsByVendor[vendorId] = [];
-      }
+      const vendorId = item.productId.vendorId._id
+        ? item.productId.vendorId._id.toString()
+        : item.productId.vendorId.toString();
+      if (!itemsByVendor[vendorId]) itemsByVendor[vendorId] = [];
       itemsByVendor[vendorId].push(item);
     });
 
     const createdOrders = [];
 
     for (const [vendorId, items] of Object.entries(itemsByVendor)) {
-      const itemsSnapshot = items.map((item) => ({
-        productId: item.productId._id,
-        name: item.productId.name,
-        price: item.productId.price,
-        quantity: item.quantity,
-      }));
+      const itemsSnapshot = items.map((item) => {
+        const { finalPrice, discount } = getDiscountedPrice(item.productId);
+        return {
+          productId: item.productId._id,
+          name: item.productId.name,
+          price: finalPrice,           // discounted price saved
+          originalPrice: item.productId.price, // original price saved for reference
+          discountApplied: discount,
+          quantity: item.quantity,
+        };
+      });
 
       const vendorTotal = itemsSnapshot.reduce(
         (sum, item) => sum + item.price * item.quantity,
@@ -84,25 +86,21 @@ const placeOrder = async (req, res) => {
       createdOrders.push(order);
     }
 
-    // reduce stock after all orders have been created
+    // reduce stock after all orders created
     for (const item of cart.items) {
       await Product.findByIdAndUpdate(item.productId._id, {
         $inc: { stock: -item.quantity },
       });
     }
 
-    // clear cart now that orders exist
+    // clear cart
     cart.items = [];
     await cart.save();
 
-    return res
-      .status(201)
-      .json({ message: "Orders placed", orders: createdOrders });
+    return res.status(201).json({ message: "Orders placed", orders: createdOrders });
   } catch (error) {
     console.error("placeOrder error:", error);
-    return res
-      .status(500)
-      .json({ message: "Server error while placing order." });
+    return res.status(500).json({ message: "Server error while placing order." });
   }
 };
 
@@ -114,16 +112,14 @@ const placeOrder = async (req, res) => {
 const getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ customerId: req.user._id })
-  .populate("vendorId", "storeName")
-  .populate("items.productId", "name")
-  .sort({ createdAt: -1 });
+      .populate("vendorId", "storeName")
+      .populate("items.productId", "name images")
+      .sort({ createdAt: -1 });
 
     return res.status(200).json(orders);
   } catch (error) {
     console.error("getMyOrders error:", error);
-    return res
-      .status(500)
-      .json({ message: "Server error while fetching orders." });
+    return res.status(500).json({ message: "Server error while fetching orders." });
   }
 };
 
@@ -147,9 +143,7 @@ const getVendorOrders = async (req, res) => {
     return res.status(200).json(orders);
   } catch (error) {
     console.error("getVendorOrders error:", error);
-    return res
-      .status(500)
-      .json({ message: "Server error while fetching vendor orders." });
+    return res.status(500).json({ message: "Server error while fetching vendor orders." });
   }
 };
 
@@ -165,9 +159,7 @@ const updateOrderStatus = async (req, res) => {
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
-        message: `Invalid status. Must be one of: ${allowedStatuses.join(
-          ", "
-        )}.`,
+        message: `Invalid status. Must be one of: ${allowedStatuses.join(", ")}.`,
       });
     }
 
@@ -183,11 +175,8 @@ const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ message: "Order not found." });
     }
 
-    // Ensure this order belongs to the requesting vendor
     if (order.vendorId.toString() !== vendorProfile._id.toString()) {
-      return res
-        .status(403)
-        .json({ message: "Not authorised to update this order." });
+      return res.status(403).json({ message: "Not authorised to update this order." });
     }
 
     order.status = status;
@@ -196,9 +185,7 @@ const updateOrderStatus = async (req, res) => {
     return res.status(200).json(updatedOrder);
   } catch (error) {
     console.error("updateOrderStatus error:", error);
-    return res
-      .status(500)
-      .json({ message: "Server error while updating order status." });
+    return res.status(500).json({ message: "Server error while updating order status." });
   }
 };
 
@@ -220,9 +207,7 @@ const getOrderById = async (req, res) => {
     return res.status(200).json(order);
   } catch (error) {
     console.error("getOrderById error:", error);
-    return res
-      .status(500)
-      .json({ message: "Server error while fetching order." });
+    return res.status(500).json({ message: "Server error while fetching order." });
   }
 };
 

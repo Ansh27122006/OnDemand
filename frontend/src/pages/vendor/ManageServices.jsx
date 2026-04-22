@@ -40,9 +40,6 @@ const Field = ({
   </div>
 );
 
-/* ══════════════════════════════════════════
-   Toast
-══════════════════════════════════════════ */
 const Toast = ({ message, type, onClose }) => {
   useEffect(() => {
     const t = setTimeout(onClose, 3500);
@@ -58,18 +55,13 @@ const Toast = ({ message, type, onClose }) => {
       }`}>
       <span className="text-lg">{type === "success" ? "✅" : "❌"}</span>
       {message}
-      <button
-        onClick={onClose}
-        className="ml-2 text-current opacity-50 hover:opacity-100 transition-opacity">
+      <button onClick={onClose} className="ml-2 text-current opacity-50 hover:opacity-100 transition-opacity">
         ✕
       </button>
     </div>
   );
 };
 
-/* ══════════════════════════════════════════
-   ConfirmDialog
-══════════════════════════════════════════ */
 const ConfirmDialog = ({ serviceName, onConfirm, onCancel }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
     <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center border border-gray-100">
@@ -98,9 +90,6 @@ const ConfirmDialog = ({ serviceName, onConfirm, onCancel }) => (
   </div>
 );
 
-/* ══════════════════════════════════════════
-   ServiceModal
-══════════════════════════════════════════ */
 const EMPTY_FORM = {
   name: "",
   description: "",
@@ -108,6 +97,7 @@ const EMPTY_FORM = {
   category: "",
   duration: "",
   availability: "",
+  discountPercentage: 0,
 };
 
 const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
@@ -120,25 +110,18 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
           category: editService.category || "",
           duration: editService.duration || "",
           availability: editService.availability || "",
+          discountPercentage: editService.discountPercentage ?? 0,
         }
       : EMPTY_FORM
   );
   const [errors, setErrors] = useState({});
-
-  // ── ADDED: image file and preview state
   const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(
-    editService?.images?.[0] || null
-  );
+  const [imagePreview, setImagePreview] = useState(editService?.images?.[0] || null);
 
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = "Service name is required";
-    if (
-      form.price === "" ||
-      isNaN(Number(form.price)) ||
-      Number(form.price) < 0
-    )
+    if (form.price === "" || isNaN(Number(form.price)) || Number(form.price) < 0)
       e.price = "Valid price is required";
     if (!form.category.trim()) e.category = "Category is required";
     if (!form.duration.trim()) e.duration = "Duration is required";
@@ -151,7 +134,6 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
-  // ── ADDED: handle image file selection and preview
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -159,7 +141,6 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
     setImagePreview(URL.createObjectURL(file));
   };
 
-  // ── ADDED: clear selected image
   const handleRemoveImage = () => {
     setImageFile(null);
     setImagePreview(editService?.images?.[0] || null);
@@ -172,8 +153,10 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
       setErrors(errs);
       return;
     }
-    // ── CHANGED: pass imageFile as second argument
-    onSubmit({ ...form, price: Number(form.price) }, imageFile);
+    onSubmit(
+      { ...form, price: Number(form.price), discountPercentage: Number(form.discountPercentage) || 0 },
+      imageFile
+    );
   };
 
   const fieldProps = { form, errors, onChange: handleChange };
@@ -181,29 +164,21 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100 overflow-hidden">
-        {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-violet-600 to-violet-700">
           <div>
             <h2 className="text-lg font-bold text-white">
               {editService ? "Edit Service" : "Add New Service"}
             </h2>
             <p className="text-violet-200 text-xs mt-0.5">
-              {editService
-                ? "Update service details"
-                : "Fill in the service details below"}
+              {editService ? "Update service details" : "Fill in the service details below"}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-white/70 hover:text-white transition-colors text-xl leading-none">
+          <button onClick={onClose} className="text-white/70 hover:text-white transition-colors text-xl leading-none">
             ✕
           </button>
         </div>
 
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
           <Field
             label="Service Name"
             name="name"
@@ -248,6 +223,24 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
             </div>
           </div>
 
+          {/* Discount Field */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              Discount (%)
+            </label>
+            <input
+              type="number"
+              name="discountPercentage"
+              value={form.discountPercentage}
+              onChange={handleChange}
+              placeholder="0"
+              min="0"
+              max="99"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400"
+            />
+            <p className="text-xs text-gray-400 mt-1">0 means no discount</p>
+          </div>
+
           {/* Category */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
@@ -258,43 +251,21 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
               value={form.category}
               onChange={handleChange}
               className={`w-full px-4 py-2.5 rounded-xl border text-sm bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-violet-500/30 ${
-                errors.category
-                  ? "border-red-300"
-                  : "border-gray-200 focus:border-violet-400"
+                errors.category ? "border-red-300" : "border-gray-200 focus:border-violet-400"
               }`}>
               <option value="">Select a category</option>
               {[
-                "Electronics & Gadgets",
-                "Food & Beverages",
-                "Home Services",
-                "Fashion & Clothing",
-                "Health & Beauty",
-                "Education & Training",
-                "Repair & Maintenance",
-                "IT & Technology",
-                "Healthcare & Medical",
-                "Transportation & Logistics",
-                "Construction & Real Estate",
-                "Financial Services",
-                "Events & Entertainment",
-                "Marketing & Advertising",
-                "Cleaning Services",
-                "Security Services",
-                "Legal Services",
-                "Photography & Media",
-                "Sports & Fitness",
-                "Automotive",
-                "Pet Services",
-                "Rental Services",
-                "Agriculture",
-                "Childcare & Senior Care",
-                "Other",
+                "Electronics & Gadgets", "Food & Beverages", "Home Services",
+                "Fashion & Clothing", "Health & Beauty", "Education & Training",
+                "Repair & Maintenance", "IT & Technology", "Healthcare & Medical",
+                "Transportation & Logistics", "Construction & Real Estate",
+                "Financial Services", "Events & Entertainment", "Marketing & Advertising",
+                "Cleaning Services", "Security Services", "Legal Services",
+                "Photography & Media", "Sports & Fitness", "Automotive",
+                "Pet Services", "Rental Services", "Agriculture",
+                "Childcare & Senior Care", "Other",
               ].map((cat) => (
-                <option
-                  key={cat}
-                  value={cat}>
-                  {cat}
-                </option>
+                <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
             {errors.category && (
@@ -309,20 +280,14 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
             {...fieldProps}
           />
 
-          {/* ── ADDED: Image Upload Field ── */}
+          {/* Image Upload */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
               Service Image
             </label>
-
-            {/* Preview */}
             {imagePreview && (
               <div className="relative mb-2 w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                />
+                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                 <button
                   type="button"
                   onClick={handleRemoveImage}
@@ -331,20 +296,9 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
                 </button>
               </div>
             )}
-
-            {/* File input */}
             <label className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border border-dashed border-gray-300 hover:border-violet-400 bg-gray-50 hover:bg-violet-50/30 cursor-pointer transition-colors">
-              <svg
-                className="w-4 h-4 text-gray-400 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
-                />
+              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
               </svg>
               <span className="text-sm text-gray-400">
                 {imageFile ? imageFile.name : "Click to upload an image"}
@@ -356,9 +310,7 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
                 className="hidden"
               />
             </label>
-            <p className="text-xs text-gray-400 mt-1">
-              JPG, PNG or WebP. Max 5MB.
-            </p>
+            <p className="text-xs text-gray-400 mt-1">JPG, PNG or WebP. Max 5MB.</p>
           </div>
 
           <div className="flex gap-3 pt-2">
@@ -384,9 +336,6 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
   );
 };
 
-/* ══════════════════════════════════════════
-   ManageServices (main page)
-══════════════════════════════════════════ */
 export default function ManageServices() {
   const { user } = useAuth();
   const [vendorId, setVendorId] = useState(null);
@@ -429,7 +378,6 @@ export default function ManageServices() {
     init();
   }, [fetchServices]);
 
-  // ── CHANGED: accept imageFile as second argument and use FormData
   const handleSubmit = async (formFields, imageFile) => {
     const isEdit = modal?.mode === "edit";
     try {
@@ -442,6 +390,7 @@ export default function ManageServices() {
       formData.append("category", formFields.category);
       formData.append("duration", formFields.duration);
       formData.append("availability", formFields.availability || "");
+      formData.append("discountPercentage", formFields.discountPercentage);
       formData.append("vendorId", vendorId);
       if (imageFile) formData.append("image", imageFile);
 
@@ -483,11 +432,7 @@ export default function ManageServices() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/20 to-white">
       {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
       )}
       {modal && (
         <ServiceModal
@@ -517,9 +462,7 @@ export default function ManageServices() {
               <p className="text-gray-400 text-sm mt-0.5">
                 {loading
                   ? "Loading…"
-                  : `${services.length} service${
-                      services.length !== 1 ? "s" : ""
-                    } in your store`}
+                  : `${services.length} service${services.length !== 1 ? "s" : ""} in your store`}
               </p>
             </div>
           </div>
@@ -547,26 +490,16 @@ export default function ManageServices() {
         {/* Approval banner */}
         {profile && !profile.isApproved && (
           <div className="mb-6 px-5 py-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-            <svg
-              className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}>
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"
-              />
+            <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
             </svg>
             <span className="text-amber-800 font-semibold text-sm">
-              Your vendor account is pending admin approval. You can't add
-              services until approved.
+              Your vendor account is pending admin approval. You can't add services until approved.
             </span>
           </div>
         )}
 
-        {/* Table card */}
+        {/* Table */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -602,6 +535,7 @@ export default function ManageServices() {
                       { label: "Category", align: "left" },
                       { label: "Price", align: "left" },
                       { label: "Duration", align: "left" },
+                      { label: "Discount", align: "left" },
                       { label: "Availability", align: "left", hidden: true },
                       { label: "Actions", align: "right" },
                     ].map(({ label, align, hidden }) => (
@@ -617,13 +551,10 @@ export default function ManageServices() {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {services.map((service) => (
-                    <tr
-                      key={service._id}
-                      className="hover:bg-violet-50/20 transition-colors duration-100">
+                    <tr key={service._id} className="hover:bg-violet-50/20 transition-colors duration-100">
                       {/* Service name */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          {/* ── CHANGED: show service image thumbnail if available */}
                           {service.images?.[0] ? (
                             <img
                               src={service.images[0]}
@@ -636,9 +567,7 @@ export default function ManageServices() {
                             </div>
                           )}
                           <div>
-                            <p className="font-semibold text-gray-800 leading-tight">
-                              {service.name}
-                            </p>
+                            <p className="font-semibold text-gray-800 leading-tight">{service.name}</p>
                             {service.description && (
                               <p className="text-xs text-gray-400 mt-0.5 line-clamp-1 max-w-xs">
                                 {service.description}
@@ -666,6 +595,17 @@ export default function ManageServices() {
                           <span className="text-base">⏱️</span>
                           {service.duration || "—"}
                         </span>
+                      </td>
+
+                      {/* Discount */}
+                      <td className="px-6 py-4">
+                        {service.discountPercentage > 0 ? (
+                          <span className="px-2.5 py-1 rounded-lg bg-green-50 text-green-700 text-xs font-semibold">
+                            {service.discountPercentage}% OFF
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">—</span>
+                        )}
                       </td>
 
                       {/* Availability */}

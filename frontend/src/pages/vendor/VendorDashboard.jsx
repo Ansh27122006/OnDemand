@@ -216,7 +216,7 @@ export default function VendorDashboard() {
           <StatCard icon="📅" label="Pending Bookings" value={stats.pendingBookings} accent="bg-emerald-50 text-emerald-600" />
         </div>
 
-        {/* Store Sale Section ─────────────────────────────────── */}
+        {/* Store Sale Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-lg">🏷️</span>
@@ -268,7 +268,6 @@ export default function VendorDashboard() {
         </div>
 
         {/* Recent Orders */}
-        {/* ── Recent Orders ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -287,9 +286,6 @@ export default function VendorDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50/70">
-                    {["Customer", "Items", "Total", "Status", "Date"].map((h) => (
-                      <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
-                    ))}
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Items</th>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
@@ -301,8 +297,6 @@ export default function VendorDashboard() {
                   {recentOrders.map((order, i) => (
                     <tr key={order._id || i} className="hover:bg-blue-50/30 transition-colors duration-100">
                       <td className="px-6 py-4 font-medium text-gray-800">
-                        {order.customer?.name || order.customerName || order.userId?.name || "Unknown"}
-                        {/* ✅ FIXED — reads customerId.name from backend */}
                         {order.customerId?.name ||
                           order.customer?.name ||
                           order.customerName ||
@@ -318,9 +312,6 @@ export default function VendorDashboard() {
                       <td className="px-6 py-4">
                         <StatusBadge status={order.status} type="order" />
                       </td>
-                      <td className="px-6 py-4 text-gray-400">
-                        {formatDate(order.createdAt)}
-                      </td>
                       <td className="px-6 py-4 text-gray-400">{formatDate(order.createdAt)}</td>
                     </tr>
                   ))}
@@ -331,7 +322,6 @@ export default function VendorDashboard() {
         </div>
 
         {/* Recent Bookings */}
-        {/* ── Recent Bookings ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -350,9 +340,6 @@ export default function VendorDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50/70">
-                    {["Customer", "Service", "Scheduled", "Status"].map((h) => (
-                      <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
-                    ))}
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Service</th>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Scheduled</th>
@@ -363,8 +350,6 @@ export default function VendorDashboard() {
                   {recentBookings.map((booking, i) => (
                     <tr key={booking._id || i} className="hover:bg-blue-50/30 transition-colors duration-100">
                       <td className="px-6 py-4 font-medium text-gray-800">
-                        {booking.customer?.name || booking.customerName || booking.userId?.name || "Unknown"}
-                        {/* ✅ FIXED — reads customerId.name from backend */}
                         {booking.customerId?.name ||
                           booking.customer?.name ||
                           booking.customerName ||

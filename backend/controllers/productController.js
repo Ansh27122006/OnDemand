@@ -19,7 +19,23 @@ const addProduct = async (req, res) => {
       });
     }
 
-    const { name, description, price, category, images, stock, discountPercentage } = req.body;
+    const {
+      name,
+      description,
+      price,
+      category,
+      images,
+      stock,
+      discountPercentage,
+    } = req.body;
+
+    // Handle image upload from multer (req.file) or JSON body
+    let productImages = [];
+    if (req.file && req.file.secure_url) {
+      productImages = [req.file.secure_url];
+    } else if (images) {
+      productImages = Array.isArray(images) ? images : [images];
+    }
 
     const product = new Product({
       vendorId: vendorProfile._id,
@@ -27,7 +43,7 @@ const addProduct = async (req, res) => {
       description,
       price,
       category,
-      images,
+      images: productImages,
       stock,
       discountPercentage: discountPercentage || 0,
     });
@@ -138,6 +154,16 @@ const updateProduct = async (req, res) => {
         product[field] = req.body[field];
       }
     });
+
+    // Handle new image upload from multer
+    if (req.file && req.file.secure_url) {
+      product.images = [req.file.secure_url];
+    }
+
+    // Handle image removal
+    if (req.body.removeImage === "true" && !req.file) {
+      product.images = [];
+    }
 
     const updatedProduct = await product.save();
 

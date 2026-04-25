@@ -1,6 +1,11 @@
 const Booking = require("../models/Bookings");
 const Service = require("../models/Service");
 const VendorProfile = require("../models/VendorsProfile");
+const User = require("../models/User");
+const {
+  sendBookingConfirmation,
+  sendBookingStatusUpdate,
+} = require("../utils/emailService");
 
 // @desc    Create a new booking
 // @route   POST /api/bookings
@@ -36,6 +41,16 @@ const createBooking = async (req, res) => {
       totalAmount: service.price,
       status: "pending",
     });
+
+    // ── Email: booking confirmation (fire-and-forget) ─────────────────────────
+    sendBookingConfirmation({
+      customerEmail: req.user.email,
+      customerName: req.user.name,
+      bookingId: booking._id,
+      serviceName: service.name,
+      scheduledDate,
+      totalAmount: service.price,
+    }).catch(console.error);
 
     res.status(201).json(booking);
   } catch (error) {
@@ -98,7 +113,10 @@ const updateBookingStatus = async (req, res) => {
     }
 
     // Find the booking and verify it belongs to this vendor
-    const booking = await Booking.findById(req.params.id);
+    const booking = await Booking.findById(req.params.id).populate(
+      "serviceId",
+      "name"
+    );
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
@@ -111,6 +129,21 @@ const updateBookingStatus = async (req, res) => {
 
     booking.status = status;
     const updatedBooking = await booking.save();
+
+    // ── Email: booking status update (fire-and-forget) ────────────────────────
+    User.findById(booking.customerId)
+      .then((customer) => {
+        if (customer) {
+          sendBookingStatusUpdate({
+            customerEmail: customer.email,
+            customerName: customer.name,
+            bookingId: booking._id,
+            serviceName: booking.serviceId?.name || "your service",
+            status,
+          }).catch(console.error);
+        }
+      })
+      .catch(console.error);
 
     res.status(200).json(updatedBooking);
   } catch (error) {

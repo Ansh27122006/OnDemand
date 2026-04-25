@@ -417,6 +417,8 @@ const Cart = () => {
   };
 
   const originalTotal = cartItems.reduce((sum, item) => {
+  // ── Totals (original prices)
+  const subtotal = cartItems.reduce((sum, item) => {
     const price = parseFloat(item.productId?.price || item.price || 0);
     return sum + price * item.quantity;
   }, 0);
@@ -428,6 +430,15 @@ const Cart = () => {
   const totalSavings = originalTotal - subtotal;
   const discount = appliedCoupon?.discountAmount ?? 0;
   const total = Math.max(0, subtotal - discount);
+  // Apply coupon discount
+  const discount = appliedCoupon?.discountAmount ?? 0;
+  const total = Math.max(0, subtotal - discount);
+  
+  // Calculate savings from both product discounts and coupon
+  const discountedTotal = cartItems.reduce((sum, item) => {
+    return sum + getItemPrice(item) * item.quantity;
+  }, 0);
+  const totalSavings = subtotal - discountedTotal + discount;
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   if (!user) return null;

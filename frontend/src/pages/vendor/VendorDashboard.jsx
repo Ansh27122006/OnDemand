@@ -216,6 +216,7 @@ export default function VendorDashboard() {
           <StatCard icon="📅" label="Pending Bookings" value={stats.pendingBookings} accent="bg-emerald-50 text-emerald-600" />
         </div>
 
+
         {/* Store Sale Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
           <div className="flex items-center gap-2 mb-4">

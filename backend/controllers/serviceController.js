@@ -155,6 +155,11 @@ const updateService = async (req, res) => {
       service.images = [req.file.secure_url];
     }
 
+    // Handle image removal
+    if (req.body.removeImage === "true" && !req.file) {
+      service.images = [];
+    }
+
     const updatedService = await service.save();
     res.status(200).json(updatedService);
   } catch (error) {

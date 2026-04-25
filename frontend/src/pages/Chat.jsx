@@ -1,412 +1,515 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { useSocket } from "../context/SocketContext";
+import { useState, useEffect, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+const Toast = ({ message, type = "success", onClose }) => (
+  <div
+    className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 text-white text-sm font-medium rounded-2xl shadow-2xl animate-slide-up ${
+      type === "success" ? "bg-slate-900" : "bg-red-600"
+    }`}>
+    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${type === "success" ? "bg-green-400" : "bg-white/30"}`}>
+      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+        {type === "success" ? (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        )}
+      </svg>
+    </div>
+    {message}
+    <button onClick={onClose} className="ml-2 text-white/60 hover:text-white transition-colors">
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+);
 
-const formatTime = (dateStr) =>
-  new Date(dateStr).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+const Spinner = () => (
+  <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+    <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+    <p className="text-sm text-slate-400 font-medium">Loading your cart...</p>
+  </div>
+);
 
-const roleBadgeColor = (role) => {
-  const map = {
-    admin: "bg-red-100 text-red-700",
-    vendor: "bg-purple-100 text-purple-700",
-    customer: "bg-blue-100 text-blue-700",
-  };
-  return map[role] ?? "bg-gray-100 text-gray-600";
+const EmptyCart = () => (
+  <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5 text-center px-4">
+    <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center">
+      <svg className="w-10 h-10 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+      </svg>
+    </div>
+    <div>
+      <p className="text-xl font-black text-slate-800">Your cart is empty</p>
+      <p className="text-slate-400 text-sm mt-2 max-w-xs">
+        Looks like you haven't added anything yet. Browse our products and find something you love.
+      </p>
+    </div>
+    <Link to="/products" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm">
+      Browse Products
+    </Link>
+  </div>
+);
+
+const getItemPrice = (item) => {
+  const product = item.productId;
+  if (!product) return parseFloat(item.price || 0);
+  const productDiscount = product.discountPercentage || 0;
+  const storeDiscount = product.vendorId?.onSale ? (product.vendorId.salePercentage || 0) : 0;
+  const effectiveDiscount = Math.max(productDiscount, storeDiscount);
+  const originalPrice = parseFloat(product.price || 0);
+  if (effectiveDiscount === 0) return originalPrice;
+  return Math.round(originalPrice - (originalPrice * effectiveDiscount / 100));
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+const CartItem = ({ item, onIncrease, onDecrease, onRemove, updating }) => {
+  const image = item.productId?.images?.[0] || item.productId?.image || "https://placehold.co/80x80?text=?";
+  const name = item.productId?.name || item.name || "Unknown Product";
+  const originalPrice = parseFloat(item.productId?.price || item.price || 0);
+  const discountedPrice = getItemPrice(item);
+  const hasDiscount = discountedPrice < originalPrice;
+  const itemSubtotal = (discountedPrice * item.quantity).toFixed(2);
+  const isUpdating = updating === item._id;
 
-export default function Chat() {
-  const { receiverId } = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { socket, isOnline } = useSocket();
+  return (
+    <div className={`flex gap-4 p-4 sm:p-5 transition-opacity ${isUpdating ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
+      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
+        <img
+          src={image}
+          alt={name}
+          onError={(e) => { e.target.src = "https://placehold.co/80x80?text=?"; }}
+          className="w-full h-full object-cover"
+        />
+      </div>
 
-  // Normalise user id — backend may serialise as 'id' or '_id'
-  const userId = user?._id || user?.id;
+      <div className="flex-1 min-w-0 flex flex-col gap-1">
+        <h3 className="text-sm font-bold text-slate-800 leading-snug line-clamp-2">{name}</h3>
+        {item.productId?.category && (
+          <span className="text-xs text-slate-400">{item.productId.category}</span>
+        )}
+        {hasDiscount ? (
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-black text-green-600">
+              ₹{discountedPrice.toFixed(2)}{" "}
+              <span className="text-slate-400 font-normal text-xs">each</span>
+            </p>
+            <p className="text-xs text-slate-400 line-through">₹{originalPrice.toFixed(2)}</p>
+          </div>
+        ) : (
+          <p className="text-sm font-black text-blue-600">
+            ₹{originalPrice.toFixed(2)}{" "}
+            <span className="text-slate-400 font-normal text-xs">each</span>
+          </p>
+        )}
+      </div>
 
-  // ── Core chat state ───────────────────────────────────────────────────────
-  const [conversation, setConversation] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [receiver, setReceiver] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [inputText, setInputText] = useState("");
-  const [isTyping, setIsTyping] = useState(false); // other user typing
+      <div className="flex flex-col items-end justify-between gap-2 shrink-0">
+        <p className="text-sm font-black text-slate-800">₹{itemSubtotal}</p>
+        <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
+          <button
+            onClick={() => onDecrease(item._id, item.quantity)}
+            className="w-7 h-7 flex items-center justify-center text-slate-500 hover:bg-slate-200 hover:text-slateate-800 transition-colors"
+            aria-label="Decrease quantity">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
+            </svg>
+          </button>
+          <span className="w-8 text-center text-xs font-bold text-slate-700 border-x border-slate-200 py-1">
+            {item.quantity}
+          </span>
+          <button
+            onClick={() => onIncrease(item._id, item.quantity)}
+            className="w-7 h-7 flex items-center justify-center text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors"
+            aria-label="Increase quantity">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        </div>
+        <button
+          onClick={() => onRemove(item._id)}
+          className="text-xs text-red-400 hover:text-red-600 transition-colors flex items-center gap-1">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+          </svg>
+          Remove
+        </button>
+      </div>
+    </div>
+  );
+};
 
-  // ── Refs ──────────────────────────────────────────────────────────────────
-  const bottomRef = useRef(null); // scroll anchor
-  const typingTimer = useRef(null); // debounce handle
-  const roomIdRef = useRef(null); // stable roomId for socket callbacks
+const CouponSection = ({ subtotal, cartItems, appliedCoupon, onApply, onRemove }) => {
+  const [code, setCode] = useState("");
+  const [validating, setValidating] = useState(false);
+  const [error, setCouponError] = useState("");
 
-  // ── 1-5: Initialise conversation on mount ────────────────────────────────
-  useEffect(() => {
-    if (!user || !receiverId) return;
-
-    const init = async () => {
-      try {
-        setLoading(true);
-
-        // Validate receiverId format before making API call
-        if (!receiverId || receiverId.length < 10) {
-          console.error("[Chat] invalid receiverId:", receiverId);
-          navigate("/conversations");
-          return;
-        }
-
-        // 1 & 2 — Get or create conversation
-        const { data: convData } = await api.post("/chat/conversation", {
-          receiverId,
-        });
-
-        if (!convData?.conversation) {
-          throw new Error("Invalid conversation response");
-        }
-
-        const conv = convData.conversation;
-        setConversation(conv);
-        roomIdRef.current = conv.roomId;
-
-        // Derive the receiver object from participants
-        const other = conv.participants.find(
-          (p) => p._id.toString() !== userId.toString()
-        );
-        setReceiver(other);
-
-        // 3 — Load message history
-        const { data: msgData } = await api.get(
-          `/chat/messages/${conv.roomId}`
-        );
-        setMessages(msgData.messages);
-
-        // 4 — Join socket room
-        if (socket) {
-          socket.emit("join_room", { roomId: conv.roomId, userId });
-        }
-
-        // 5 — Mark existing messages as read
-        await api.put(`/chat/read/${conv.roomId}`);
-
-        // Emit event to update navbar unread count
-        if (socket) {
-          socket.emit("unread_cleared", { roomId: conv.roomId, userId });
-        }
-      } catch (err) {
-        console.error("[Chat] init error:", err);
-        // Redirect to conversations on error
-        navigate("/conversations");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    init();
-
-    // Leave room on unmount
-    return () => {
-      if (socket && roomIdRef.current) {
-        socket.emit("typing", {
-          roomId: roomIdRef.current,
-          userId,
-          isTyping: false,
-        });
-      }
-      clearTimeout(typingTimer.current);
-    };
-  }, [user, receiverId, socket]);
-
-  // ── Socket listeners ──────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!socket) return;
-
-    // New message arrives → append to list
-    const onReceiveMessage = (message) => {
-      setMessages((prev) => [...prev, message]);
-    };
-
-    // Other user typing status
-    const onUserTyping = ({ userId: typingUserId, isTyping: typing }) => {
-      if (typingUserId !== userId?.toString()) {
-        setIsTyping(typing);
-      }
-    };
-
-    // Messages were read by the other user → mark our sent messages as read
-    const onMessagesRead = () => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.senderId?._id?.toString() === userId?.toString() ||
-          m.senderId?.toString() === userId?.toString()
-            ? { ...m, isRead: true }
-            : m
-        )
-      );
-    };
-
-    socket.on("receive_message", onReceiveMessage);
-    socket.on("user_typing", onUserTyping);
-    socket.on("messages_read", onMessagesRead);
-
-    return () => {
-      socket.off("receive_message", onReceiveMessage);
-      socket.off("user_typing", onUserTyping);
-      socket.off("messages_read", onMessagesRead);
-    };
-  }, [socket, userId]);
-
-  // ── Typing debounce ───────────────────────────────────────────────────────
-  const handleInputChange = (e) => {
-    setInputText(e.target.value);
-
-    if (!socket || !roomIdRef.current) return;
-
-    // Emit isTyping=true immediately on keystroke
-    socket.emit("typing", {
-      roomId: roomIdRef.current,
-      userId,
-      isTyping: true,
-    });
-
-    // Reset the 1.5 s debounce timer
-    clearTimeout(typingTimer.current);
-    typingTimer.current = setTimeout(() => {
-      socket.emit("typing", {
-        roomId: roomIdRef.current,
-        userId,
-        isTyping: false,
-      });
-    }, 1500);
+  const handleChange = (e) => {
+    setCode(e.target.value.toUpperCase());
+    if (error) setCouponError("");
   };
 
-  // ── Send message ──────────────────────────────────────────────────────────
-  const handleSend = useCallback(() => {
-    const text = inputText.trim();
-    if (!text || !socket || !conversation) return;
-
-    socket.emit("send_message", {
-      roomId: conversation.roomId,
-      senderId: userId,
-      receiverId,
-      text,
-      conversationId: conversation._id,
-    });
-
-    // Stop typing indicator immediately on send
-    clearTimeout(typingTimer.current);
-    socket.emit("typing", {
-      roomId: conversation.roomId,
-      userId,
-      isTyping: false,
-    });
-
-    setInputText("");
-    // ⚠️  Do NOT push to messages here — wait for 'receive_message' event
-  }, [inputText, socket, conversation, userId, receiverId]);
-
-  // Allow Enter key to send
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  const handleApply = async () => {
+    const trimmed = code.trim();
+    if (!trimmed) return setCouponError("Please enter a coupon code.");
+    const vendorId = cartItems[0]?.productId?.vendorId?._id || cartItems[0]?.productId?.vendorId;
+    if (!vendorId) return setCouponError("Unable to determine vendor. Try refreshing.");
+    setValidating(true);
+    setCouponError("");
+    try {
+      const res = await api.post("/coupons/validate", { code: trimmed, vendorId, cartTotal: subtotal });
+      const { discountAmount, couponCode } = res.data;
+      onApply({ code: couponCode || trimmed, discountAmount });
+      setCode("");
+    } catch (err) {
+      setCouponError(err.response?.data?.message || "Invalid or expired coupon code.");
+    } finally {
+      setValidating(false);
     }
   };
 
-  // ── Derived helpers ───────────────────────────────────────────────────────
-  const isMine = (msg) => {
-    const sid = msg.senderId?._id ?? msg.senderId;
-    return sid?.toString() === userId?.toString();
-  };
+  const handleKeyDown = (e) => { if (e.key === "Enter") handleApply(); };
 
-  // ── Loading state ─────────────────────────────────────────────────────────
-  if (loading) {
+  if (appliedCoupon) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm">Loading conversation…</p>
+      <div className="rounded-xl border border-green-200 bg-green-50 p-4 flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <span className="text-sm font-bold text-green-800 font-mono tracking-widest">{appliedCoupon.code}</span>
+          </div>
+          <button onClick={onRemove} className="text-xs text-green-700 hover:text-red-500 font-semibold underline underline-offset-2 transition-colors shrink-0">
+            Remove
+          </button>
         </div>
+        <p className="text-xs text-green-700 font-medium pl-7">
+          🎉 Coupon applied! You save ₹{appliedCoupon.discountAmount.toFixed(2)}
+        </p>
       </div>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* ── HEADER ─────────────────────────────────────────────────────── */}
-      <header className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
-        {/* Back button */}
+    <div className="flex flex-col gap-2">
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Have a coupon?</p>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={code}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Enter code"
+          className={`flex-1 px-3 py-2 text-sm font-mono font-semibold tracking-widest rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder:font-sans placeholder:font-normal placeholder:tracking-normal ${
+            error ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"
+          }`}
+        />
         <button
-          onClick={() => navigate(-1)}
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Go back">
-          <svg
-            className="w-5 h-5 text-gray-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-
-        {/* Avatar placeholder */}
-        <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
-          {receiver?.name?.charAt(0)?.toUpperCase() ?? "?"}
-        </div>
-
-        {/* Name + role + online status */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-gray-800 truncate">
-              {receiver?.name ?? "Unknown User"}
-            </span>
-
-            {/* Online indicator dot */}
-            <span
-              className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                isOnline(receiverId) ? "bg-green-400" : "bg-gray-300"
-              }`}
-              title={isOnline(receiverId) ? "Online" : "Offline"}
-            />
-          </div>
-
-          {/* Role badge */}
-          {receiver?.role && (
-            <span
-              className={`text-xs font-medium px-2 py-0.5 rounded-full ${roleBadgeColor(
-                receiver.role
-              )}`}>
-              {receiver.role.charAt(0).toUpperCase() + receiver.role.slice(1)}
-            </span>
-          )}
-        </div>
-      </header>
-
-      {/* ── MESSAGES AREA ──────────────────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {messages.length === 0 && (
-          <p className="text-center text-gray-400 text-sm mt-10">
-            No messages yet. Say hello! 👋
-          </p>
-        )}
-
-        {messages.map((msg, idx) => {
-          const mine = isMine(msg);
-          const senderName = msg.senderId?.name ?? "Unknown";
-          const showName = !mine;
-
-          return (
-            <div
-              key={msg._id ?? idx}
-              className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
-              {/* Sender name (only for their messages) */}
-              {showName && (
-                <span className="text-xs text-gray-500 mb-1 ml-1">
-                  {senderName}
-                </span>
-              )}
-
-              {/* Bubble */}
-              <div
-                className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                  mine
-                    ? "bg-blue-500 text-white rounded-br-sm"
-                    : "bg-white text-gray-800 border border-gray-200 rounded-bl-sm"
-                }`}>
-                {msg.text}
-              </div>
-
-              {/* Timestamp + read receipt */}
-              <div
-                className={`flex items-center gap-1 mt-1 ${
-                  mine ? "flex-row-reverse" : ""
-                }`}>
-                <span className="text-xs text-gray-400">
-                  {formatTime(msg.createdAt)}
-                </span>
-
-                {/* Double-tick read receipt for sent messages */}
-                {mine && (
-                  <svg
-                    className={`w-4 h-4 ${
-                      msg.isRead ? "text-blue-400" : "text-gray-300"
-                    }`}
-                    fill="currentColor"
-                    viewBox="0 0 24 24">
-                    <path d="M18 7l-1.4-1.4-6.6 6.6-2.6-2.6L6 11l4 4 8-8zm-4 0l-1.4-1.4-3 3 1.4 1.4 3-3z" />
-                  </svg>
-                )}
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Typing indicator */}
-        {isTyping && (
-          <div className="flex items-start gap-2">
-            <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm">
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0ms]" />
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:150ms]" />
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:300ms]" />
-              </div>
-            </div>
-            <span className="text-xs text-gray-400 self-end mb-1">
-              {receiver?.name ?? "User"} is typing…
-            </span>
-          </div>
-        )}
-
-        {/* Invisible scroll anchor */}
-        <div ref={bottomRef} />
-      </main>
-
-      {/* ── INPUT AREA ─────────────────────────────────────────────────── */}
-      <footer className="px-4 py-3 bg-white border-t border-gray-200">
-        <div className="flex items-end gap-2">
-          <textarea
-            rows={1}
-            value={inputText}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message…"
-            className="flex-1 resize-none rounded-2xl border border-gray-300 px-4 py-2.5 text-sm text-gray-800
-                       placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400
-                       max-h-32 overflow-y-auto leading-relaxed"
-          />
-
-          <button
-            onClick={handleSend}
-            disabled={!inputText.trim()}
-            className="shrink-0 w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600
-                       disabled:bg-gray-200 disabled:cursor-not-allowed
-                       flex items-center justify-center transition-colors shadow-sm"
-            aria-label="Send message">
-            <svg
-              className="w-4 h-4 text-white"
-              fill="currentColor"
-              viewBox="0 0 24 24">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+          onClick={handleApply}
+          disabled={validating}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors shrink-0 flex items-center gap-1.5">
+          {validating ? (
+            <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
             </svg>
-          </button>
-        </div>
-
-        <p className="text-xs text-gray-400 mt-1.5 ml-1">
-          Press <kbd className="bg-gray-100 px-1 rounded">Enter</kbd> to send,{" "}
-          <kbd className="bg-gray-100 px-1 rounded">Shift + Enter</kbd> for new
-          line
+          ) : "Apply"}
+        </button>
+      </div>
+      {error && (
+        <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
+          </svg>
+          {error}
         </p>
-      </footer>
+      )}
     </div>
   );
-}
+};
+
+const Cart = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const [cartItems, setCartItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [updating, setUpdating] = useState(null);
+  const [placing, setPlacing] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+
+  useEffect(() => {
+    if (!user) navigate("/login", { replace: true });
+  }, [user, navigate]);
+
+  const fetchCart = useCallback(async () => {
+    try {
+      const res = await api.get("/cart");
+      const data = Array.isArray(res.data) ? res.data : res.data.items || res.data.cart || [];
+      setCartItems(data);
+    } catch (err) {
+      setError("Failed to load cart. Please refresh the page.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { if (user) fetchCart(); }, [user, fetchCart]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  useEffect(() => {
+    if (appliedCoupon) setAppliedCoupon(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartItems.length]);
+
+  const handleIncrease = async (itemId, currentQty) => {
+    setUpdating(itemId);
+    const newQty = currentQty + 1;
+    try {
+      const res = await api.put(`/cart/${itemId}`, { quantity: newQty });
+      const updated = res.data.item || res.data;
+      setCartItems((prev) => prev.map((item) => item._id === itemId ? { ...item, quantity: updated.quantity ?? newQty } : item));
+    } catch {
+      setToast({ message: "Failed to update quantity.", type: "error" });
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleDecrease = async (itemId, currentQty) => {
+    if (currentQty <= 1) return handleRemove(itemId);
+    const newQty = currentQty - 1;
+    setUpdating(itemId);
+    try {
+      const res = await api.put(`/cart/${itemId}`, { quantity: newQty });
+      const updated = res.data.item || res.data;
+      setCartItems((prev) => prev.map((item) => item._id === itemId ? { ...item, quantity: updated.quantity ?? newQty } : item));
+    } catch {
+      setToast({ message: "Failed to update quantity.", type: "error" });
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleRemove = async (itemId) => {
+    setUpdating(itemId);
+    try {
+      await api.delete(`/cart/${itemId}`);
+      setCartItems((prev) => prev.filter((item) => item._id !== itemId));
+      setToast({ message: "Item removed from cart.", type: "success" });
+    } catch {
+      setToast({ message: "Failed to remove item.", type: "error" });
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handlePlaceOrder = async () => {
+    setPlacing(true);
+    try {
+      const body = {};
+      if (appliedCoupon) {
+        body.couponCode = appliedCoupon.code;
+        body.discountAmount = appliedCoupon.discountAmount;
+      }
+      await api.post("/orders", body);
+      navigate("/customer/orders", { state: { orderSuccess: true } });
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to place order. Please try again.";
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setPlacing(false);
+    }
+  };
+
+  const subtotal = cartItems.reduce((sum, item) => {
+    const price = parseFloat(item.productId?.price || item.price || 0);
+    return sum + price * item.quantity;
+  }, 0);
+
+  const discount = appliedCoupon?.discountAmount ?? 0;
+  const total = Math.max(0, subtotal - discount);
+
+  const discountedTotal = cartItems.reduce((sum, item) => {
+    return sum + getItemPrice(item) * item.quantity;
+  }, 0);
+  const totalSavings = subtotal - discountedTotal + discount;
+  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  if (!user) return null;
+  if (loading) return <Spinner />;
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">My Cart</h1>
+            <p className="text-slate-400 text-sm mt-0.5">
+              {cartItems.length === 0 ? "No items" : `${totalItems} item${totalItems !== 1 ? "s" : ""}`}
+            </p>
+          </div>
+          <Link to="/products" className="text-sm text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1.5 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Continue Shopping
+          </Link>
+        </div>
+      </div>
+
+      {error && (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-6">
+          <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
+            </svg>
+            {error}
+          </div>
+        </div>
+      )}
+
+      {cartItems.length === 0 && !loading ? (
+        <EmptyCart />
+      ) : (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100">
+                {cartItems.map((item) => (
+                  <CartItem
+                    key={item._id}
+                    item={item}
+                    onIncrease={handleIncrease}
+                    onDecrease={handleDecrease}
+                    onRemove={handleRemove}
+                    updating={updating}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="lg:col-span-1">
+              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sticky top-24 flex flex-col gap-5">
+                <h2 className="text-base font-black text-slate-900">Order Summary</h2>
+
+                <div className="space-y-2.5 text-sm">
+                  {cartItems.map((item) => {
+                    const discountedPrice = getItemPrice(item);
+                    const name = item.productId?.name || item.name || "Product";
+                    return (
+                      <div key={item._id} className="flex justify-between text-slate-600 gap-2">
+                        <span className="truncate">
+                          {name}
+                          <span className="text-slate-400 ml-1">×{item.quantity}</span>
+                        </span>
+                        <span className="font-semibold text-slate-800 shrink-0">
+                          ₹{(discountedPrice * item.quantity).toFixed(2)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="border-t border-slate-100 pt-4 space-y-2 text-sm">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Subtotal</span>
+                    <span className="font-semibold">₹{subtotal.toFixed(2)}</span>
+                  </div>
+                  {totalSavings > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Discount Savings</span>
+                      <span className="font-semibold">−₹{totalSavings.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-slate-600">
+                    <span>Shipping</span>
+                    <span className="text-green-600 font-semibold">Free</span>
+                  </div>
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-green-600">
+                      <span className="flex items-center gap-1">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        Discount ({appliedCoupon.code})
+                      </span>
+                      <span className="font-semibold">− ₹{discount.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
+                  <span className="font-black text-slate-900">Total</span>
+                  <div className="text-right">
+                    <span className="text-xl font-black text-blue-600">₹{total.toFixed(2)}</span>
+                    {appliedCoupon && (
+                      <p className="text-xs text-slate-400 line-through mt-0.5">₹{subtotal.toFixed(2)}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-100 pt-4">
+                  <CouponSection
+                    subtotal={subtotal}
+                    cartItems={cartItems}
+                    appliedCoupon={appliedCoupon}
+                    onApply={setAppliedCoupon}
+                    onRemove={() => setAppliedCoupon(null)}
+                  />
+                </div>
+
+                <button
+                  onClick={handlePlaceOrder}
+                  disabled={placing || cartItems.length === 0}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl shadow-sm transition-colors">
+                  {placing ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Placing Order...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Place Order
+                    </>
+                  )}
+                </button>
+
+                <p className="text-center text-xs text-slate-400">Secure checkout. No hidden fees.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      <style>{`
+        @keyframes slide-up {
+          from { opacity: 0; transform: translateY(1rem); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up { animation: slide-up 0.25s ease-out both; }
+      `}</style>
+    </div>
+  );
+};
+
+export default Cart;

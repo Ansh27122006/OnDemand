@@ -348,8 +348,6 @@ const Cart = () => {
     return () => clearTimeout(t);
   }, [toast]);
 
-<<<<<<< HEAD
-=======
   // Clear coupon whenever cart items change (stock/quantity change can invalidate it)
   useEffect(() => {
     if (appliedCoupon) setAppliedCoupon(null);
@@ -357,7 +355,6 @@ const Cart = () => {
   }, [cartItems.length]);
 
   // ── Increase quantity
->>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
   const handleIncrease = async (itemId, currentQty) => {
     setUpdating(itemId);
     const newQty = currentQty + 1;
@@ -400,10 +397,7 @@ const Cart = () => {
     }
   };
 
-<<<<<<< HEAD
-=======
   // ── Place Order — now includes coupon fields when applied
->>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
   const handlePlaceOrder = async () => {
     setPlacing(true);
     try {
@@ -422,27 +416,18 @@ const Cart = () => {
     }
   };
 
-<<<<<<< HEAD
-  // ── Totals using discounted prices
-  const total = cartItems.reduce((sum, item) => {
-    return sum + getItemPrice(item) * item.quantity;
-  }, 0);
-
   const originalTotal = cartItems.reduce((sum, item) => {
-=======
-  // ── Totals
-  const subtotal = cartItems.reduce((sum, item) => {
->>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
     const price = parseFloat(item.productId?.price || item.price || 0);
     return sum + price * item.quantity;
   }, 0);
 
-<<<<<<< HEAD
-  const totalSavings = originalTotal - total;
-=======
+  const subtotal = cartItems.reduce((sum, item) => {
+    return sum + getItemPrice(item) * item.quantity;
+  }, 0);
+
+  const totalSavings = originalTotal - subtotal;
   const discount = appliedCoupon?.discountAmount ?? 0;
   const total = Math.max(0, subtotal - discount);
->>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   if (!user) return null;
@@ -570,9 +555,7 @@ const Cart = () => {
                 {/* Total */}
                 <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
                   <span className="font-black text-slate-900">Total</span>
-<<<<<<< HEAD
                   <span className="text-xl font-black text-blue-600">₹{total.toFixed(2)}</span>
-=======
                   <div className="text-right">
                     <span className="text-xl font-black text-blue-600">
                       ₹{total.toFixed(2)}
@@ -595,7 +578,6 @@ const Cart = () => {
                     onApply={setAppliedCoupon}
                     onRemove={() => setAppliedCoupon(null)}
                   />
->>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
                 </div>
 
                 {/* Place Order */}

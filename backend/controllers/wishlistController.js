@@ -7,7 +7,7 @@ const getWishlist = async (req, res) => {
   try {
     const wishlist = await Wishlist.findOne({
       customerId: req.user._id,
-    }).populate("items.productId", "name price image category");
+    }).populate("items.productId", "name price images category");
 
     if (!wishlist) {
       return res.status(200).json({ items: [] });
@@ -45,9 +45,11 @@ const addToWishlist = async (req, res) => {
       { customerId: req.user._id },
       { $push: { items: { productId } } },
       { new: true, upsert: true }
-    ).populate("items.productId", "name price image category");
+    ).populate("items.productId", "name price images category");
 
-    res.status(200).json({ message: "Added to wishlist", items: wishlist.items });
+    res
+      .status(200)
+      .json({ message: "Added to wishlist", items: wishlist.items });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -64,13 +66,15 @@ const removeFromWishlist = async (req, res) => {
       { customerId: req.user._id },
       { $pull: { items: { productId } } },
       { new: true }
-    ).populate("items.productId", "name price image category");
+    ).populate("items.productId", "name price images category");
 
     if (!wishlist) {
       return res.status(404).json({ message: "Wishlist not found" });
     }
 
-    res.status(200).json({ message: "Removed from wishlist", items: wishlist.items });
+    res
+      .status(200)
+      .json({ message: "Removed from wishlist", items: wishlist.items });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

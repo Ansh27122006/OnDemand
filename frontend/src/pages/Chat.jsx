@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../../api/axios";
-import { useAuth } from "../../context/AuthContext";
+import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 
 const Toast = ({ message, type = "success", onClose }) => (
   <div
@@ -52,7 +52,6 @@ const EmptyCart = () => (
   </div>
 );
 
-/* ── Price helper ── */
 const getItemPrice = (item) => {
   const product = item.productId;
   if (!product) return parseFloat(item.price || 0);
@@ -64,14 +63,13 @@ const getItemPrice = (item) => {
   return Math.round(originalPrice - (originalPrice * effectiveDiscount / 100));
 };
 
-/* ── Cart Item Row ── */
 const CartItem = ({ item, onIncrease, onDecrease, onRemove, updating }) => {
   const image = item.productId?.images?.[0] || item.productId?.image || "https://placehold.co/80x80?text=?";
   const name = item.productId?.name || item.name || "Unknown Product";
   const originalPrice = parseFloat(item.productId?.price || item.price || 0);
   const discountedPrice = getItemPrice(item);
   const hasDiscount = discountedPrice < originalPrice;
-  const subtotal = (discountedPrice * item.quantity).toFixed(2);
+  const itemSubtotal = (discountedPrice * item.quantity).toFixed(2);
   const isUpdating = updating === item._id;
 
   return (
@@ -107,12 +105,11 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, updating }) => {
       </div>
 
       <div className="flex flex-col items-end justify-between gap-2 shrink-0">
-        <p className="text-sm font-black text-slate-800">₹{subtotal}</p>
-
+        <p className="text-sm font-black text-slate-800">₹{itemSubtotal}</p>
         <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
           <button
             onClick={() => onDecrease(item._id, item.quantity)}
-            className="w-7 h-7 flex items-center justify-center text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors"
+            className="w-7 h-7 flex items-center justify-center text-slate-500 hover:bg-slate-200 hover:text-slateate-800 transition-colors"
             aria-label="Decrease quantity">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
@@ -130,7 +127,6 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, updating }) => {
             </svg>
           </button>
         </div>
-
         <button
           onClick={() => onRemove(item._id)}
           className="text-xs text-red-400 hover:text-red-600 transition-colors flex items-center gap-1">
@@ -144,7 +140,6 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, updating }) => {
   );
 };
 
-/* ── Coupon Section ── */
 const CouponSection = ({ subtotal, cartItems, appliedCoupon, onApply, onRemove }) => {
   const [code, setCode] = useState("");
   const [validating, setValidating] = useState(false);
@@ -158,36 +153,23 @@ const CouponSection = ({ subtotal, cartItems, appliedCoupon, onApply, onRemove }
   const handleApply = async () => {
     const trimmed = code.trim();
     if (!trimmed) return setCouponError("Please enter a coupon code.");
-
-    const vendorId =
-      cartItems[0]?.productId?.vendorId?._id ||
-      cartItems[0]?.productId?.vendorId;
-    if (!vendorId)
-      return setCouponError("Unable to determine vendor. Try refreshing.");
-
+    const vendorId = cartItems[0]?.productId?.vendorId?._id || cartItems[0]?.productId?.vendorId;
+    if (!vendorId) return setCouponError("Unable to determine vendor. Try refreshing.");
     setValidating(true);
     setCouponError("");
     try {
-      const res = await api.post("/coupons/validate", {
-        code: trimmed,
-        vendorId,
-        cartTotal: subtotal,
-      });
+      const res = await api.post("/coupons/validate", { code: trimmed, vendorId, cartTotal: subtotal });
       const { discountAmount, couponCode } = res.data;
       onApply({ code: couponCode || trimmed, discountAmount });
       setCode("");
     } catch (err) {
-      setCouponError(
-        err.response?.data?.message || "Invalid or expired coupon code."
-      );
+      setCouponError(err.response?.data?.message || "Invalid or expired coupon code.");
     } finally {
       setValidating(false);
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") handleApply();
-  };
+  const handleKeyDown = (e) => { if (e.key === "Enter") handleApply(); };
 
   if (appliedCoupon) {
     return (
@@ -199,13 +181,9 @@ const CouponSection = ({ subtotal, cartItems, appliedCoupon, onApply, onRemove }
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <span className="text-sm font-bold text-green-800 font-mono tracking-widest">
-              {appliedCoupon.code}
-            </span>
+            <span className="text-sm font-bold text-green-800 font-mono tracking-widest">{appliedCoupon.code}</span>
           </div>
-          <button
-            onClick={onRemove}
-            className="text-xs text-green-700 hover:text-red-500 font-semibold underline underline-offset-2 transition-colors shrink-0">
+          <button onClick={onRemove} className="text-xs text-green-700 hover:text-red-500 font-semibold underline underline-offset-2 transition-colors shrink-0">
             Remove
           </button>
         </div>
@@ -218,9 +196,7 @@ const CouponSection = ({ subtotal, cartItems, appliedCoupon, onApply, onRemove }
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-        Have a coupon?
-      </p>
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Have a coupon?</p>
       <div className="flex gap-2">
         <input
           type="text"
@@ -241,9 +217,7 @@ const CouponSection = ({ subtotal, cartItems, appliedCoupon, onApply, onRemove }
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
             </svg>
-          ) : (
-            "Apply"
-          )}
+          ) : "Apply"}
         </button>
       </div>
       {error && (
@@ -258,9 +232,6 @@ const CouponSection = ({ subtotal, cartItems, appliedCoupon, onApply, onRemove }
   );
 };
 
-/* ══════════════════════════════════════════
-   Cart Page
-══════════════════════════════════════════ */
 const Cart = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -289,9 +260,7 @@ const Cart = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (user) fetchCart();
-  }, [user, fetchCart]);
+  useEffect(() => { if (user) fetchCart(); }, [user, fetchCart]);
 
   useEffect(() => {
     if (!toast) return;
@@ -364,7 +333,6 @@ const Cart = () => {
     }
   };
 
-  // ── Totals
   const subtotal = cartItems.reduce((sum, item) => {
     const price = parseFloat(item.productId?.price || item.price || 0);
     return sum + price * item.quantity;
@@ -377,7 +345,6 @@ const Cart = () => {
     return sum + getItemPrice(item) * item.quantity;
   }, 0);
   const totalSavings = subtotal - discountedTotal + discount;
-
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   if (!user) return null;
@@ -385,7 +352,6 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex items-center justify-between">
           <div>
@@ -419,7 +385,6 @@ const Cart = () => {
       ) : (
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Cart Items */}
             <div className="lg:col-span-2">
               <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100">
                 {cartItems.map((item) => (
@@ -435,7 +400,6 @@ const Cart = () => {
               </div>
             </div>
 
-            {/* Order Summary */}
             <div className="lg:col-span-1">
               <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sticky top-24 flex flex-col gap-5">
                 <h2 className="text-base font-black text-slate-900">Order Summary</h2>
@@ -486,22 +450,16 @@ const Cart = () => {
                   )}
                 </div>
 
-                {/* Total */}
                 <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
                   <span className="font-black text-slate-900">Total</span>
                   <div className="text-right">
-                    <span className="text-xl font-black text-blue-600">
-                      ₹{total.toFixed(2)}
-                    </span>
+                    <span className="text-xl font-black text-blue-600">₹{total.toFixed(2)}</span>
                     {appliedCoupon && (
-                      <p className="text-xs text-slate-400 line-through mt-0.5">
-                        ₹{subtotal.toFixed(2)}
-                      </p>
+                      <p className="text-xs text-slate-400 line-through mt-0.5">₹{subtotal.toFixed(2)}</p>
                     )}
                   </div>
                 </div>
 
-                {/* Coupon Section */}
                 <div className="border-t border-slate-100 pt-4">
                   <CouponSection
                     subtotal={subtotal}
@@ -512,7 +470,6 @@ const Cart = () => {
                   />
                 </div>
 
-                {/* Place Order */}
                 <button
                   onClick={handlePlaceOrder}
                   disabled={placing || cartItems.length === 0}

@@ -55,7 +55,9 @@ const Toast = ({ message, type, onClose }) => {
       }`}>
       <span className="text-lg">{type === "success" ? "✅" : "❌"}</span>
       {message}
-      <button onClick={onClose} className="ml-2 text-current opacity-50 hover:opacity-100 transition-opacity">
+      <button
+        onClick={onClose}
+        className="ml-2 text-current opacity-50 hover:opacity-100 transition-opacity">
         ✕
       </button>
     </div>
@@ -116,12 +118,19 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
   );
   const [errors, setErrors] = useState({});
   const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(editService?.images?.[0] || null);
+  const [imagePreview, setImagePreview] = useState(
+    editService?.images?.[0] || null
+  );
+  const [imageRemoved, setImageRemoved] = useState(false);
 
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = "Service name is required";
-    if (form.price === "" || isNaN(Number(form.price)) || Number(form.price) < 0)
+    if (
+      form.price === "" ||
+      isNaN(Number(form.price)) ||
+      Number(form.price) < 0
+    )
       e.price = "Valid price is required";
     if (!form.category.trim()) e.category = "Category is required";
     if (!form.duration.trim()) e.duration = "Duration is required";
@@ -143,7 +152,8 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
 
   const handleRemoveImage = () => {
     setImageFile(null);
-    setImagePreview(editService?.images?.[0] || null);
+    setImagePreview(null);
+    setImageRemoved(true);
   };
 
   const handleSubmit = (e) => {
@@ -154,8 +164,13 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
       return;
     }
     onSubmit(
-      { ...form, price: Number(form.price), discountPercentage: Number(form.discountPercentage) || 0 },
-      imageFile
+      {
+        ...form,
+        price: Number(form.price),
+        discountPercentage: Number(form.discountPercentage) || 0,
+      },
+      imageFile,
+      imageRemoved
     );
   };
 
@@ -170,15 +185,21 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
               {editService ? "Edit Service" : "Add New Service"}
             </h2>
             <p className="text-violet-200 text-xs mt-0.5">
-              {editService ? "Update service details" : "Fill in the service details below"}
+              {editService
+                ? "Update service details"
+                : "Fill in the service details below"}
             </p>
           </div>
-          <button onClick={onClose} className="text-white/70 hover:text-white transition-colors text-xl leading-none">
+          <button
+            onClick={onClose}
+            className="text-white/70 hover:text-white transition-colors text-xl leading-none">
             ✕
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
           <Field
             label="Service Name"
             name="name"
@@ -251,21 +272,43 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
               value={form.category}
               onChange={handleChange}
               className={`w-full px-4 py-2.5 rounded-xl border text-sm bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-violet-500/30 ${
-                errors.category ? "border-red-300" : "border-gray-200 focus:border-violet-400"
+                errors.category
+                  ? "border-red-300"
+                  : "border-gray-200 focus:border-violet-400"
               }`}>
               <option value="">Select a category</option>
               {[
-                "Electronics & Gadgets", "Food & Beverages", "Home Services",
-                "Fashion & Clothing", "Health & Beauty", "Education & Training",
-                "Repair & Maintenance", "IT & Technology", "Healthcare & Medical",
-                "Transportation & Logistics", "Construction & Real Estate",
-                "Financial Services", "Events & Entertainment", "Marketing & Advertising",
-                "Cleaning Services", "Security Services", "Legal Services",
-                "Photography & Media", "Sports & Fitness", "Automotive",
-                "Pet Services", "Rental Services", "Agriculture",
-                "Childcare & Senior Care", "Other",
+                "Electronics & Gadgets",
+                "Food & Beverages",
+                "Home Services",
+                "Fashion & Clothing",
+                "Health & Beauty",
+                "Education & Training",
+                "Repair & Maintenance",
+                "IT & Technology",
+                "Healthcare & Medical",
+                "Transportation & Logistics",
+                "Construction & Real Estate",
+                "Financial Services",
+                "Events & Entertainment",
+                "Marketing & Advertising",
+                "Cleaning Services",
+                "Security Services",
+                "Legal Services",
+                "Photography & Media",
+                "Sports & Fitness",
+                "Automotive",
+                "Pet Services",
+                "Rental Services",
+                "Agriculture",
+                "Childcare & Senior Care",
+                "Other",
               ].map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option
+                  key={cat}
+                  value={cat}>
+                  {cat}
+                </option>
               ))}
             </select>
             {errors.category && (
@@ -287,7 +330,11 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
             </label>
             {imagePreview && (
               <div className="relative mb-2 w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
-                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                />
                 <button
                   type="button"
                   onClick={handleRemoveImage}
@@ -297,8 +344,17 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
               </div>
             )}
             <label className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border border-dashed border-gray-300 hover:border-violet-400 bg-gray-50 hover:bg-violet-50/30 cursor-pointer transition-colors">
-              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              <svg
+                className="w-4 h-4 text-gray-400 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+                />
               </svg>
               <span className="text-sm text-gray-400">
                 {imageFile ? imageFile.name : "Click to upload an image"}
@@ -310,7 +366,9 @@ const ServiceModal = ({ editService, onClose, onSubmit, loading }) => {
                 className="hidden"
               />
             </label>
-            <p className="text-xs text-gray-400 mt-1">JPG, PNG or WebP. Max 5MB.</p>
+            <p className="text-xs text-gray-400 mt-1">
+              JPG, PNG or WebP. Max 5MB.
+            </p>
           </div>
 
           <div className="flex gap-3 pt-2">
@@ -378,7 +436,7 @@ export default function ManageServices() {
     init();
   }, [fetchServices]);
 
-  const handleSubmit = async (formFields, imageFile) => {
+  const handleSubmit = async (formFields, imageFile, imageRemoved = false) => {
     const isEdit = modal?.mode === "edit";
     try {
       setActionLoading(true);
@@ -393,6 +451,7 @@ export default function ManageServices() {
       formData.append("discountPercentage", formFields.discountPercentage);
       formData.append("vendorId", vendorId);
       if (imageFile) formData.append("image", imageFile);
+      if (isEdit && imageRemoved) formData.append("removeImage", "true");
 
       if (isEdit) {
         await api.put(`/services/${modal.service._id}`, formData, {
@@ -432,7 +491,11 @@ export default function ManageServices() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/20 to-white">
       {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
       {modal && (
         <ServiceModal
@@ -462,7 +525,9 @@ export default function ManageServices() {
               <p className="text-gray-400 text-sm mt-0.5">
                 {loading
                   ? "Loading…"
-                  : `${services.length} service${services.length !== 1 ? "s" : ""} in your store`}
+                  : `${services.length} service${
+                      services.length !== 1 ? "s" : ""
+                    } in your store`}
               </p>
             </div>
           </div>
@@ -490,11 +555,21 @@ export default function ManageServices() {
         {/* Approval banner */}
         {profile && !profile.isApproved && (
           <div className="mb-6 px-5 py-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-            <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
+            <svg
+              className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"
+              />
             </svg>
             <span className="text-amber-800 font-semibold text-sm">
-              Your vendor account is pending admin approval. You can't add services until approved.
+              Your vendor account is pending admin approval. You can't add
+              services until approved.
             </span>
           </div>
         )}
@@ -551,7 +626,9 @@ export default function ManageServices() {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {services.map((service) => (
-                    <tr key={service._id} className="hover:bg-violet-50/20 transition-colors duration-100">
+                    <tr
+                      key={service._id}
+                      className="hover:bg-violet-50/20 transition-colors duration-100">
                       {/* Service name */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -567,7 +644,9 @@ export default function ManageServices() {
                             </div>
                           )}
                           <div>
-                            <p className="font-semibold text-gray-800 leading-tight">{service.name}</p>
+                            <p className="font-semibold text-gray-800 leading-tight">
+                              {service.name}
+                            </p>
                             {service.description && (
                               <p className="text-xs text-gray-400 mt-0.5 line-clamp-1 max-w-xs">
                                 {service.description}

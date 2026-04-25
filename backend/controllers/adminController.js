@@ -4,6 +4,10 @@ const Product = require("../models/Product");
 const Service = require("../models/Service");
 const Order = require("../models/Order");
 const Bookings = require("../models/Bookings");
+const {
+  sendVendorApproved,
+  sendVendorRejected,
+} = require("../utils/emailService");
 
 // @desc    Get all users (excluding passwords)
 // @route   GET /api/admin/users
@@ -71,6 +75,13 @@ const approveVendor = async (req, res) => {
     vendor.isApproved = true;
     const updatedVendor = await vendor.save();
 
+    // ── Email: vendor approved (fire-and-forget) ──────────────────────────────
+    sendVendorApproved({
+      vendorEmail: vendor.userId.email,
+      vendorName: vendor.userId.name,
+      storeName: vendor.storeName,
+    }).catch(console.error);
+
     res
       .status(200)
       .json({ message: "Vendor approved successfully", vendor: updatedVendor });
@@ -94,6 +105,13 @@ const rejectVendor = async (req, res) => {
 
     vendor.isApproved = false;
     const updatedVendor = await vendor.save();
+
+    // ── Email: vendor rejected (fire-and-forget) ──────────────────────────────
+    sendVendorRejected({
+      vendorEmail: vendor.userId.email,
+      vendorName: vendor.userId.name,
+      storeName: vendor.storeName,
+    }).catch(console.error);
 
     res
       .status(200)

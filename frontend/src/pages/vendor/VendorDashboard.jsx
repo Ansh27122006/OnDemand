@@ -193,6 +193,7 @@ export default function VendorDashboard() {
           <StatCard icon="📅" label="Pending Bookings" value={stats.pendingBookings} accent="bg-emerald-50 text-emerald-600" />
         </div>
 
+
         {/* Store Sale Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -269,7 +270,10 @@ export default function VendorDashboard() {
                   {recentOrders.map((order, i) => (
                     <tr key={order._id || i} className="hover:bg-blue-50/30 transition-colors duration-100">
                       <td className="px-6 py-4 font-medium text-gray-800">
-                        {order.customerId?.name || order.customer?.name || order.customerName || "Unknown"}
+                        {order.customerId?.name ||
+                          order.customer?.name ||
+                          order.customerName ||
+                          "Unknown"}
                       </td>
                       <td className="px-6 py-4 text-gray-500">
                         {order.items?.length ?? order.itemCount ?? "—"}
@@ -319,7 +323,10 @@ export default function VendorDashboard() {
                   {recentBookings.map((booking, i) => (
                     <tr key={booking._id || i} className="hover:bg-blue-50/30 transition-colors duration-100">
                       <td className="px-6 py-4 font-medium text-gray-800">
-                        {booking.customerId?.name || booking.customer?.name || booking.customerName || "Unknown"}
+                        {booking.customerId?.name ||
+                          booking.customer?.name ||
+                          booking.customerName ||
+                          "Unknown"}
                       </td>
                       <td className="px-6 py-4 text-gray-600">
                         {booking.service?.name || booking.serviceName || booking.serviceId?.name || "—"}

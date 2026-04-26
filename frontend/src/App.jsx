@@ -41,8 +41,9 @@ import ManageUsers from "./pages/admin/ManageUsers";
 import AdminManageProducts from "./pages/admin/AdminManageProducts";
 import AdminManageServices from "./pages/admin/AdminManageServices";
 import AdminVendorStore from "./pages/admin/AdminVendorStore";
+import ManageReturns from "./pages/admin/ManageReturns";
 
-//chat pages
+// Chat pages
 import Conversations from "./pages/Conversations";
 import Chat from "./pages/Chat";
 
@@ -55,153 +56,63 @@ const App = () => {
       {!hideNavbar && <Navbar />}
       <Routes>
         {/* ── Public Routes ── */}
-        <Route
-          path="/"
-          element={<LandingPage />}
-        />
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-        <Route
-          path="/register"
-          element={<Register />}
-        />
-        <Route
-          path="/unauthorized"
-          element={<Unauthorized />}
-        />
-        <Route
-          path="/products"
-          element={<BrowseProducts />}
-        />
-        <Route
-          path="/services"
-          element={<BrowseServices />}
-        />
-        <Route
-          path="/products/:id"
-          element={<ProductDetail />}
-        />
-        <Route
-          path="/services/:id"
-          element={<ServiceDetail />}
-        />
-        <Route
-          path="/store/:vendorId"
-          element={<VendorStore />}
-        />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/products" element={<BrowseProducts />} />
+        <Route path="/services" element={<BrowseServices />} />
+        <Route path="/products/:id" element={<ProductDetail />} />
+        <Route path="/services/:id" element={<ServiceDetail />} />
+        <Route path="/store/:vendorId" element={<VendorStore />} />
+
         {/* ── Protected Routes (Customer, Vendor, Admin) ── */}
         <Route
           element={
             <ProtectedRoute allowedRoles={["customer", "vendor", "admin"]} />
           }>
-          <Route
-            path="/profile/edit"
-            element={<EditProfile />}
-          />
+          <Route path="/profile/edit" element={<EditProfile />} />
         </Route>
+
         {/* ── Customer Only ── */}
         <Route element={<ProtectedRoute allowedRoles={["customer"]} />}>
-          <Route
-            path="/customer/dashboard"
-            element={<Home />}
-          />
-          <Route
-            path="/customer/cart"
-            element={<Cart />}
-          />
-          <Route
-            path="/customer/orders"
-            element={<MyOrders />}
-          />
-          <Route
-            path="/customer/bookings"
-            element={<MyBookings />}
-          />
-          <Route
-            path="/customer/wishlist"
-            element={<Wishlist />}
-          />
-          <Route
-            path="/customer/orders/:id"
-            element={<OrderDetail />}
-          />
+          <Route path="/customer/dashboard" element={<Home />} />
+          <Route path="/customer/cart" element={<Cart />} />
+          <Route path="/customer/orders" element={<MyOrders />} />
+          <Route path="/customer/bookings" element={<MyBookings />} />
+          <Route path="/customer/wishlist" element={<Wishlist />} />
+          <Route path="/customer/orders/:id" element={<OrderDetail />} />
         </Route>
 
         {/* ── Vendor Only ── */}
         <Route element={<ProtectedRoute allowedRoles={["vendor"]} />}>
-          <Route
-            path="/vendor/dashboard"
-            element={<VendorDashboard />}
-          />
-          <Route
-            path="/vendor/products"
-            element={<ManageProducts />}
-          />
-          <Route
-            path="/vendor/services"
-            element={<ManageServices />}
-          />
-          <Route
-            path="/vendor/orders"
-            element={<ManageOrders />}
-          />
-          <Route
-            path="/vendor/bookings"
-            element={<ManageBookings />}
-          />
-          <Route
-            path="/vendor/profile"
-            element={<VendorProfile />}
-          />
-          <Route
-            path="/vendor/coupons"
-            element={<ManageCoupons />}
-          />
+          <Route path="/vendor/dashboard" element={<VendorDashboard />} />
+          <Route path="/vendor/products" element={<ManageProducts />} />
+          <Route path="/vendor/services" element={<ManageServices />} />
+          <Route path="/vendor/orders" element={<ManageOrders />} />
+          <Route path="/vendor/bookings" element={<ManageBookings />} />
+          <Route path="/vendor/profile" element={<VendorProfile />} />
+          <Route path="/vendor/coupons" element={<ManageCoupons />} />
         </Route>
 
         {/* ── Admin Only ── */}
         <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-          <Route
-            path="/admin/dashboard"
-            element={<AdminDashboard />}
-          />
-          <Route
-            path="/admin/vendors"
-            element={<ManageVendors />}
-          />
-          <Route
-            path="/admin/users"
-            element={<ManageUsers />}
-          />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/vendors" element={<ManageVendors />} />
+          <Route path="/admin/users" element={<ManageUsers />} />
+          <Route path="/admin/products" element={<AdminManageProducts />} />
+          <Route path="/admin/services" element={<AdminManageServices />} />
+          <Route path="/admin/vendors/:id/store" element={<AdminVendorStore />} />
+          <Route path="/admin/returns" element={<ManageReturns />} />
         </Route>
-        <Route
-          path="/admin/products"
-          element={<AdminManageProducts />}
-        />
-        <Route
-          path="/admin/services"
-          element={<AdminManageServices />}
-        />
-        <Route
-          path="/admin/vendors/:id/store"
-          element={<AdminVendorStore />}
-        />
 
-        {/* ── Chat Routes (Protected for all authenticated users) ── */}
+        {/* ── Chat Routes (all authenticated users) ── */}
         <Route
           element={
             <ProtectedRoute allowedRoles={["customer", "vendor", "admin"]} />
           }>
-          <Route
-            path="/conversations"
-            element={<Conversations />}
-          />
-          <Route
-            path="/chat/:receiverId"
-            element={<Chat />}
-          />
+          <Route path="/conversations" element={<Conversations />} />
+          <Route path="/chat/:receiverId" element={<Chat />} />
         </Route>
       </Routes>
       <Footer />

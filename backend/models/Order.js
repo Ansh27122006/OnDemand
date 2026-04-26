@@ -6,6 +6,9 @@ const orderItemSchema = new mongoose.Schema({
     ref: "Product",
     required: true,
   },
+  name: {
+    type: String,
+  },
   quantity: {
     type: Number,
     required: true,
@@ -14,6 +17,15 @@ const orderItemSchema = new mongoose.Schema({
   price: {
     type: Number,
     required: true,
+    min: 0,
+  },
+  originalPrice: {
+    type: Number,
+    min: 0,
+  },
+  discountApplied: {
+    type: Number,
+    default: 0,
     min: 0,
   },
 });
@@ -33,7 +45,7 @@ const orderSchema = new mongoose.Schema(
     items: [orderItemSchema],
     status: {
       type: String,
-      enum: ["pending", "confirmed", "delivered", "cancelled"],
+      enum: ["pending", "confirmed", "delivered", "cancelled", "returned"],
       default: "pending",
     },
     couponCode: {
@@ -51,7 +63,7 @@ const orderSchema = new mongoose.Schema(
       min: 0,
     },
   },
-  { timestamps: true } // adds createdAt + updatedAt automatically
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("Order", orderSchema);

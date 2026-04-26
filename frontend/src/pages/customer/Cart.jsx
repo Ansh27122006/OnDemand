@@ -268,11 +268,13 @@ const Cart = () => {
     return () => clearTimeout(t);
   }, [toast]);
 
+  // Clear coupon whenever cart items change (stock/quantity change can invalidate it)
   useEffect(() => {
     if (appliedCoupon) setAppliedCoupon(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartItems.length]);
 
+  // ── Increase quantity
   const handleIncrease = async (itemId, currentQty) => {
     setUpdating(itemId);
     const newQty = currentQty + 1;
@@ -315,6 +317,7 @@ const Cart = () => {
     }
   };
 
+  // ── Place Order — now includes coupon fields when applied
   const handlePlaceOrder = async () => {
     setPlacing(true);
     try {
@@ -333,19 +336,22 @@ const Cart = () => {
     }
   };
 
-  // ── Totals
-  const subtotal = cartItems.reduce((sum, item) => {
+  // ── Totals (original prices)
+  const originalTotal = cartItems.reduce((sum, item) => {
     const price = parseFloat(item.productId?.price || item.price || 0);
     return sum + price * item.quantity;
   }, 0);
 
-  const discount = appliedCoupon?.discountAmount ?? 0;
-  const total = Math.max(0, subtotal - discount);
-
-  const discountedTotal = cartItems.reduce((sum, item) => {
+  const subtotal = cartItems.reduce((sum, item) => {
     return sum + getItemPrice(item) * item.quantity;
   }, 0);
-  const totalSavings = subtotal - discountedTotal + discount;
+
+  // Apply coupon discount
+  const discount = appliedCoupon?.discountAmount ?? 0;
+  const total = Math.max(0, subtotal - discount);
+  
+  // Calculate savings from both product discounts and coupon
+  const totalSavings = originalTotal - subtotal + discount;
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   if (!user) return null;
@@ -453,6 +459,7 @@ const Cart = () => {
 
                 <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
                   <span className="font-black text-slate-900">Total</span>
+                  <span className="text-xl font-black text-blue-600">₹{total.toFixed(2)}</span>
                   <div className="text-right">
                     <span className="text-xl font-black text-blue-600">₹{total.toFixed(2)}</span>
                     {appliedCoupon && (

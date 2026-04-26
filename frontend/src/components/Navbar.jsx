@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useSocket } from "../context/SocketContext"; // ← added
-import api from "../api/axios"; // ← added
+import { useSocket } from "../context/SocketContext";
+import api from "../api/axios";
 
 /* ── Role-based nav config ── */
 const navConfig = {
@@ -17,7 +17,7 @@ const navConfig = {
     dropdown: [
       { label: "My Orders", to: "/customer/orders" },
       { label: "My Bookings", to: "/customer/bookings" },
-      { label: "Messages", to: "/conversations" }, // ← added
+      { label: "Messages", to: "/conversations" },
       { label: "Edit Profile", to: "/profile/edit" },
     ],
   },
@@ -30,23 +30,24 @@ const navConfig = {
       { label: "Manage Orders", to: "/vendor/orders" },
       { label: "Manage Bookings", to: "/vendor/bookings" },
       { label: "Manage Coupons", to: "/vendor/coupons" },
-      { label: "Messages", to: "/conversations" }, // ← added
+      { label: "Messages", to: "/conversations" },
       { label: "Edit Profile", to: "/profile/edit" },
     ],
   },
   admin: {
     links: [],
     dropdown: [
-      { label: "Dashboard", to: "/admin/dashboard" },
-      { label: "Manage Vendors", to: "/admin/vendors" },
-      { label: "Manage Users", to: "/admin/users" },
-      { label: "Manage Products", to: "/admin/products" },
-      { label: "Manage Services", to: "/admin/services" },
-      { label: "Messages", to: "/conversations" }, // ← added
-      { label: "Edit Profile", to: "/profile/edit" },
+      { label: "Dashboard",       to: "/admin/dashboard" },
+      { label: "Manage Vendors",  to: "/admin/vendors"   },
+      { label: "Manage Users",    to: "/admin/users"     },
+      { label: "Manage Products", to: "/admin/products"  },
+      { label: "Manage Services", to: "/admin/services"  },
+      { label: "Return Requests", to: "/admin/returns"   },
+      { label: "Messages",        to: "/conversations"   },
+      { label: "Edit Profile",    to: "/profile/edit"    },
     ],
   },
-};
+}; // ← closing brace that was missing
 
 /* ── Chevron icon ── */
 const ChevronDown = ({ open }) => (
@@ -123,7 +124,6 @@ const sumUnread = (conversations, userId) => {
   return conversations.reduce((total, conv) => {
     const counts = conv.unreadCount;
     if (!counts) return total;
-    // unreadCount arrives as a plain object over JSON (Mongoose Map serialises to {})
     const val =
       typeof counts.get === "function"
         ? counts.get(key) || 0
@@ -137,17 +137,17 @@ const sumUnread = (conversations, userId) => {
 ══════════════════════════════════════════ */
 const Navbar = () => {
   const { user, logout } = useAuth();
-  const { socket } = useSocket(); // ← added
+  const { socket } = useSocket();
   const navigate = useNavigate();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [totalUnread, setTotalUnread] = useState(0); // ← added
+  const [totalUnread, setTotalUnread] = useState(0);
 
   const dropdownRef = useRef(null);
   const config = user ? navConfig[user.role] : null;
 
-  // ── Fetch initial unread count on mount / login ────────────────────────
+  // ── Fetch initial unread count on mount / login
   useEffect(() => {
     if (!user) {
       setTotalUnread(0);
@@ -158,19 +158,17 @@ const Navbar = () => {
         const { data } = await api.get("/chat/conversations");
         setTotalUnread(sumUnread(data.conversations, user._id));
       } catch {
-        // Non-critical — badge simply won't show if request fails
+        // Non-critical
       }
     };
     fetchUnread();
   }, [user]);
 
-  // ── Real-time unread updates via socket ────────────────────────────────
+  // ── Real-time unread updates via socket
   useEffect(() => {
     if (!socket || !user) return;
 
-    const onConversationUpdated = (updated) => {
-      // Re-fetch the full list so the sum stays accurate across all conversations.
-      // Using a lightweight local update avoids managing a full conversations array here.
+    const onConversationUpdated = () => {
       api
         .get("/chat/conversations")
         .then(({ data }) =>
@@ -179,7 +177,6 @@ const Navbar = () => {
         .catch(() => {});
     };
 
-    // When user opens a chat and marks messages as read
     const onUnreadCleared = () => {
       api
         .get("/chat/conversations")
@@ -197,7 +194,7 @@ const Navbar = () => {
     };
   }, [socket, user]);
 
-  // Close dropdown on outside click
+  // ── Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -291,7 +288,6 @@ const Navbar = () => {
                 <span className="text-sm font-semibold text-slate-700 max-w-[120px] truncate">
                   {user.name}
                 </span>
-                {/* Unread dot on avatar button when dropdown is closed */}
                 {totalUnread > 0 && !dropdownOpen && (
                   <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
                 )}
@@ -314,7 +310,7 @@ const Navbar = () => {
                     </span>
                   </div>
 
-                  {/* Dropdown links — Messages gets an inline unread badge */}
+                  {/* Dropdown links */}
                   {config.dropdown.map((item) => (
                     <Link
                       key={item.to}
@@ -413,7 +409,7 @@ const Navbar = () => {
                 </Link>
               ))}
 
-              {/* Dropdown items — Messages gets an inline unread badge */}
+              {/* Dropdown items */}
               {config.dropdown.map((item) => (
                 <Link
                   key={item.to}

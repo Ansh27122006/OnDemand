@@ -76,6 +76,28 @@ const vendorProfileSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+
+  // ── Social media & website links (all optional) ──
+  website: {
+    type: String,
+    default: "",
+  },
+  instagram: {
+    type: String,
+    default: "",
+  },
+  facebook: {
+    type: String,
+    default: "",
+  },
+  twitter: {
+    type: String,
+    default: "",
+  },
+  youtube: {
+    type: String,
+    default: "",
+  },
 });
 
 module.exports = mongoose.model("VendorProfile", vendorProfileSchema);

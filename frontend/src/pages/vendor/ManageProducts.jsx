@@ -52,7 +52,9 @@ const Toast = ({ message, type, onClose }) => {
       }`}>
       <span className="text-lg">{type === "success" ? "✅" : "❌"}</span>
       {message}
-      <button onClick={onClose} className="ml-2 text-current opacity-50 hover:opacity-100">
+      <button
+        onClick={onClose}
+        className="ml-2 text-current opacity-50 hover:opacity-100">
         ✕
       </button>
     </div>
@@ -114,14 +116,23 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
   const [imagePreview, setImagePreview] = useState(
     editProduct?.images?.[0] || null
   );
+  const [imageRemoved, setImageRemoved] = useState(false);
 
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = "Product name is required";
-    if (form.price === "" || isNaN(Number(form.price)) || Number(form.price) < 0)
+    if (
+      form.price === "" ||
+      isNaN(Number(form.price)) ||
+      Number(form.price) < 0
+    )
       e.price = "Valid price is required";
     if (!form.category.trim()) e.category = "Category is required";
-    if (form.stock === "" || isNaN(Number(form.stock)) || Number(form.stock) < 0)
+    if (
+      form.stock === "" ||
+      isNaN(Number(form.stock)) ||
+      Number(form.stock) < 0
+    )
       e.stock = "Valid stock quantity is required";
     return e;
   };
@@ -141,7 +152,8 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
 
   const handleRemoveImage = () => {
     setImageFile(null);
-    setImagePreview(editProduct?.images?.[0] || null);
+    setImagePreview(null);
+    setImageRemoved(true);
   };
 
   const handleSubmit = (e) => {
@@ -160,7 +172,8 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
         stock: Number(form.stock),
         discountPercentage: Number(form.discountPercentage) || 0,
       },
-      imageFile
+      imageFile,
+      imageRemoved
     );
   };
 
@@ -175,15 +188,21 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
               {editProduct ? "Edit Product" : "Add New Product"}
             </h2>
             <p className="text-violet-200 text-xs mt-0.5">
-              {editProduct ? "Update product details" : "Fill in the product details below"}
+              {editProduct
+                ? "Update product details"
+                : "Fill in the product details below"}
             </p>
           </div>
-          <button onClick={onClose} className="text-white/70 hover:text-white text-xl">
+          <button
+            onClick={onClose}
+            className="text-white/70 hover:text-white text-xl">
             ✕
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
           <Field
             label="Product Name"
             name="name"
@@ -250,21 +269,43 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
               value={form.category}
               onChange={handleChange}
               className={`w-full px-4 py-2.5 rounded-xl border text-sm bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-violet-500/30 ${
-                errors.category ? "border-red-300" : "border-gray-200 focus:border-violet-400"
+                errors.category
+                  ? "border-red-300"
+                  : "border-gray-200 focus:border-violet-400"
               }`}>
               <option value="">Select a category</option>
               {[
-                "Electronics & Gadgets", "Food & Beverages", "Home Services",
-                "Fashion & Clothing", "Health & Beauty", "Education & Training",
-                "Repair & Maintenance", "IT & Technology", "Healthcare & Medical",
-                "Transportation & Logistics", "Construction & Real Estate",
-                "Financial Services", "Events & Entertainment", "Marketing & Advertising",
-                "Cleaning Services", "Security Services", "Legal Services",
-                "Photography & Media", "Sports & Fitness", "Automotive",
-                "Pet Services", "Rental Services", "Agriculture",
-                "Childcare & Senior Care", "Other",
+                "Electronics & Gadgets",
+                "Food & Beverages",
+                "Home Services",
+                "Fashion & Clothing",
+                "Health & Beauty",
+                "Education & Training",
+                "Repair & Maintenance",
+                "IT & Technology",
+                "Healthcare & Medical",
+                "Transportation & Logistics",
+                "Construction & Real Estate",
+                "Financial Services",
+                "Events & Entertainment",
+                "Marketing & Advertising",
+                "Cleaning Services",
+                "Security Services",
+                "Legal Services",
+                "Photography & Media",
+                "Sports & Fitness",
+                "Automotive",
+                "Pet Services",
+                "Rental Services",
+                "Agriculture",
+                "Childcare & Senior Care",
+                "Other",
               ].map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option
+                  key={cat}
+                  value={cat}>
+                  {cat}
+                </option>
               ))}
             </select>
             {errors.category && (
@@ -279,7 +320,11 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
             </label>
             {imagePreview && (
               <div className="relative mb-2 w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
-                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                />
                 <button
                   type="button"
                   onClick={handleRemoveImage}
@@ -289,8 +334,17 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
               </div>
             )}
             <label className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border border-dashed border-gray-300 hover:border-violet-400 bg-gray-50 hover:bg-violet-50/30 cursor-pointer transition-colors">
-              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              <svg
+                className="w-4 h-4 text-gray-400 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+                />
               </svg>
               <span className="text-sm text-gray-400">
                 {imageFile ? imageFile.name : "Click to upload an image"}
@@ -302,7 +356,9 @@ const ProductModal = ({ editProduct, onClose, onSubmit, loading }) => {
                 className="hidden"
               />
             </label>
-            <p className="text-xs text-gray-400 mt-1">JPG, PNG or WebP. Max 5MB.</p>
+            <p className="text-xs text-gray-400 mt-1">
+              JPG, PNG or WebP. Max 5MB.
+            </p>
           </div>
 
           <div className="flex gap-3 pt-2">
@@ -370,7 +426,7 @@ export default function ManageProducts() {
     init();
   }, [fetchProducts]);
 
-  const handleSubmit = async (formFields, imageFile) => {
+  const handleSubmit = async (formFields, imageFile, imageRemoved = false) => {
     const isEdit = modal?.mode === "edit";
     try {
       setActionLoading(true);
@@ -384,6 +440,7 @@ export default function ManageProducts() {
       formData.append("discountPercentage", formFields.discountPercentage);
       formData.append("vendorId", vendorId);
       if (imageFile) formData.append("image", imageFile);
+      if (isEdit && imageRemoved) formData.append("removeImage", "true");
 
       if (isEdit) {
         await api.put(`/products/${modal.product._id}`, formData, {
@@ -423,7 +480,11 @@ export default function ManageProducts() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/20 to-white">
       {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
       {modal && (
         <ProductModal
@@ -453,7 +514,9 @@ export default function ManageProducts() {
               <p className="text-gray-400 text-sm mt-0.5">
                 {loading
                   ? "Loading…"
-                  : `${products.length} product${products.length !== 1 ? "s" : ""} in your store`}
+                  : `${products.length} product${
+                      products.length !== 1 ? "s" : ""
+                    } in your store`}
               </p>
             </div>
           </div>
@@ -481,11 +544,21 @@ export default function ManageProducts() {
         {/* Approval banner */}
         {profile && !profile.isApproved && (
           <div className="mb-6 px-5 py-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-            <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
+            <svg
+              className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"
+              />
             </svg>
             <span className="text-amber-800 font-semibold text-sm">
-              Your vendor account is pending admin approval. You can't add products until approved.
+              Your vendor account is pending admin approval. You can't add
+              products until approved.
             </span>
           </div>
         )}
@@ -521,7 +594,14 @@ export default function ManageProducts() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50/80 border-b border-gray-100">
-                    {["Product", "Category", "Price", "Stock", "Discount", "Actions"].map((h) => (
+                    {[
+                      "Product",
+                      "Category",
+                      "Price",
+                      "Stock",
+                      "Discount",
+                      "Actions",
+                    ].map((h) => (
                       <th
                         key={h}
                         className={`px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider ${
@@ -534,7 +614,9 @@ export default function ManageProducts() {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {products.map((product) => (
-                    <tr key={product._id} className="hover:bg-violet-50/20 transition-colors">
+                    <tr
+                      key={product._id}
+                      className="hover:bg-violet-50/20 transition-colors">
                       {/* Product */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -550,7 +632,9 @@ export default function ManageProducts() {
                             </div>
                           )}
                           <div>
-                            <p className="font-semibold text-gray-800">{product.name}</p>
+                            <p className="font-semibold text-gray-800">
+                              {product.name}
+                            </p>
                             {product.description && (
                               <p className="text-xs text-gray-400 line-clamp-1 max-w-xs">
                                 {product.description}

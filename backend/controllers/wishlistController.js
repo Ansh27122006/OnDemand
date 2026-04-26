@@ -1,5 +1,14 @@
 const Wishlist = require("../models/Wishlist");
 
+const wishlistPopulate = {
+  path: "items.productId",
+  select: "name price images category discountPercentage vendorId",
+  populate: {
+    path: "vendorId",
+    select: "storeName onSale salePercentage",
+  },
+};
+
 // @desc    Get the logged-in customer's wishlist
 // @route   GET /api/wishlist
 // @access  Private (customer)
@@ -7,7 +16,7 @@ const getWishlist = async (req, res) => {
   try {
     const wishlist = await Wishlist.findOne({
       customerId: req.user._id,
-    }).populate("items.productId", "name price images category");
+    }).populate(wishlistPopulate);
 
     if (!wishlist) {
       return res.status(200).json({ items: [] });
@@ -30,7 +39,6 @@ const addToWishlist = async (req, res) => {
       return res.status(400).json({ message: "productId is required" });
     }
 
-    // Check if the item is already in the wishlist before upserting
     const existing = await Wishlist.findOne({
       customerId: req.user._id,
       "items.productId": productId,
@@ -40,16 +48,13 @@ const addToWishlist = async (req, res) => {
       return res.status(200).json({ message: "Already in wishlist" });
     }
 
-    // Find or create the wishlist and push the new item
     const wishlist = await Wishlist.findOneAndUpdate(
       { customerId: req.user._id },
       { $push: { items: { productId } } },
       { new: true, upsert: true }
-    ).populate("items.productId", "name price images category");
+    ).populate(wishlistPopulate);
 
-    res
-      .status(200)
-      .json({ message: "Added to wishlist", items: wishlist.items });
+    res.status(200).json({ message: "Added to wishlist", items: wishlist.items });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -66,15 +71,13 @@ const removeFromWishlist = async (req, res) => {
       { customerId: req.user._id },
       { $pull: { items: { productId } } },
       { new: true }
-    ).populate("items.productId", "name price images category");
+    ).populate(wishlistPopulate);
 
     if (!wishlist) {
       return res.status(404).json({ message: "Wishlist not found" });
     }
 
-    res
-      .status(200)
-      .json({ message: "Removed from wishlist", items: wishlist.items });
+    res.status(200).json({ message: "Removed from wishlist", items: wishlist.items });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

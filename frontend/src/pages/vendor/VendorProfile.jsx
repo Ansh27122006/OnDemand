@@ -4,7 +4,17 @@ import api from "../../api/axios";
 import Loader from "../../components/Loader";
 import CATEGORIES from "../../constants/categories";
 
-const EMPTY_FORM = { storeName: "", description: "", category: "" };
+const EMPTY_FORM = {
+  storeName: "",
+  description: "",
+  category: "",
+  // ── Social media & website ──
+  website: "",
+  instagram: "",
+  facebook: "",
+  twitter: "",
+  youtube: "",
+};
 
 /* ── Approval Badge ── */
 const ApprovalBadge = ({ isApproved }) =>
@@ -21,7 +31,6 @@ const ApprovalBadge = ({ isApproved }) =>
   );
 
 /* ── Profile Form ── */
-// ── CHANGED: accepts existingLogo prop; calls onSubmit(form, logoFile)
 const ProfileForm = ({
   initial = EMPTY_FORM,
   existingLogo = null,
@@ -32,14 +41,22 @@ const ProfileForm = ({
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState({});
 
-  // ── ADDED: logo file and preview state
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(existingLogo || null);
 
   /* Keep form in sync if initial changes */
   useEffect(() => {
     setForm(initial);
-  }, [initial.storeName, initial.description, initial.category]);
+  }, [
+    initial.storeName,
+    initial.description,
+    initial.category,
+    initial.website,
+    initial.instagram,
+    initial.facebook,
+    initial.twitter,
+    initial.youtube,
+  ]);
 
   /* Sync logo preview when existingLogo changes */
   useEffect(() => {
@@ -59,7 +76,6 @@ const ProfileForm = ({
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
-  // ── ADDED: handle logo file selection and preview
   const handleLogoChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -67,7 +83,6 @@ const ProfileForm = ({
     setLogoPreview(URL.createObjectURL(file));
   };
 
-  // ── ADDED: clear selected logo
   const handleRemoveLogo = () => {
     setLogoFile(null);
     setLogoPreview(existingLogo || null);
@@ -80,7 +95,6 @@ const ProfileForm = ({
       setErrors(errs);
       return;
     }
-    // ── CHANGED: pass logoFile as second argument
     onSubmit(form, logoFile);
   };
 
@@ -94,9 +108,8 @@ const ProfileForm = ({
     }`;
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5">
+
       {/* Store Name */}
       <div>
         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
@@ -142,11 +155,7 @@ const ProfileForm = ({
           className={inputClass("category")}>
           <option value="">Select a category</option>
           {CATEGORIES.map((cat) => (
-            <option
-              key={cat}
-              value={cat}>
-              {cat}
-            </option>
+            <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
         {errors.category && (
@@ -154,13 +163,11 @@ const ProfileForm = ({
         )}
       </div>
 
-      {/* ── ADDED: Store Logo Upload ── */}
+      {/* Store Logo Upload */}
       <div>
         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
           Store Logo
         </label>
-
-        {/* Preview */}
         {logoPreview && (
           <div className="relative mb-2 w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
             <img
@@ -176,20 +183,9 @@ const ProfileForm = ({
             </button>
           </div>
         )}
-
-        {/* File input */}
         <label className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border border-dashed border-gray-300 hover:border-violet-400 bg-gray-50 hover:bg-violet-50/30 cursor-pointer transition-colors">
-          <svg
-            className="w-4 h-4 text-gray-400 shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}>
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
-            />
+          <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
           </svg>
           <span className="text-sm text-gray-400">
             {logoFile ? logoFile.name : "Click to upload a logo"}
@@ -202,6 +198,110 @@ const ProfileForm = ({
           />
         </label>
         <p className="text-xs text-gray-400 mt-1">JPG, PNG or WebP. Max 5MB.</p>
+      </div>
+
+      {/* ══ NEW: Online Presence (Optional) ══ */}
+      <div className="pt-2">
+        {/* Section heading */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 h-px bg-gray-100" />
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">
+            Online Presence (Optional)
+          </span>
+          <div className="flex-1 h-px bg-gray-100" />
+        </div>
+
+        <div className="space-y-4">
+          {/* Website */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              Website
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🌐</span>
+              <input
+                name="website"
+                type="url"
+                value={form.website}
+                onChange={handleChange}
+                placeholder="https://yourwebsite.com"
+                className={`${inputClass("website")} pl-9`}
+              />
+            </div>
+          </div>
+
+          {/* Instagram */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              Instagram
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">📸</span>
+              <input
+                name="instagram"
+                type="url"
+                value={form.instagram}
+                onChange={handleChange}
+                placeholder="https://instagram.com/yourhandle"
+                className={`${inputClass("instagram")} pl-9`}
+              />
+            </div>
+          </div>
+
+          {/* Facebook */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              Facebook
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">📘</span>
+              <input
+                name="facebook"
+                type="url"
+                value={form.facebook}
+                onChange={handleChange}
+                placeholder="https://facebook.com/yourpage"
+                className={`${inputClass("facebook")} pl-9`}
+              />
+            </div>
+          </div>
+
+          {/* Twitter / X */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              Twitter / X
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🐦</span>
+              <input
+                name="twitter"
+                type="url"
+                value={form.twitter}
+                onChange={handleChange}
+                placeholder="https://twitter.com/yourhandle"
+                className={`${inputClass("twitter")} pl-9`}
+              />
+            </div>
+          </div>
+
+          {/* YouTube */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              YouTube
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">▶️</span>
+              <input
+                name="youtube"
+                type="url"
+                value={form.youtube}
+                onChange={handleChange}
+                placeholder="https://youtube.com/yourchannel"
+                className={`${inputClass("youtube")} pl-9`}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <button
@@ -228,6 +328,23 @@ const DetailRow = ({ label, value }) => (
     </span>
   </div>
 );
+
+/* ── Social Link Row ── */
+const SocialRow = ({ label, value, icon }) =>
+  value ? (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-4 border-b border-gray-100 last:border-0">
+      <span className="sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-wide shrink-0">
+        {icon} {label}
+      </span>
+      <a
+        href={value}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sm text-violet-600 hover:text-violet-700 hover:underline truncate">
+        {value}
+      </a>
+    </div>
+  ) : null;
 
 /* ══════════════════════════════════════════
    VendorProfile Page
@@ -265,7 +382,6 @@ export default function VendorProfile() {
     fetchProfile();
   }, []);
 
-  // ── CHANGED: accept logoFile as second argument and use FormData
   const handleCreate = async (formFields, logoFile) => {
     setActionLoading(true);
     try {
@@ -274,6 +390,12 @@ export default function VendorProfile() {
       formData.append("description", formFields.description || "");
       formData.append("category", formFields.category);
       if (logoFile) formData.append("logo", logoFile);
+      // ── NEW: append social fields if filled ──
+      if (formFields.website)   formData.append("website",   formFields.website);
+      if (formFields.instagram) formData.append("instagram", formFields.instagram);
+      if (formFields.facebook)  formData.append("facebook",  formFields.facebook);
+      if (formFields.twitter)   formData.append("twitter",   formFields.twitter);
+      if (formFields.youtube)   formData.append("youtube",   formFields.youtube);
 
       const res = await api.post("/vendors/profile", formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -291,7 +413,6 @@ export default function VendorProfile() {
     }
   };
 
-  // ── CHANGED: accept logoFile as second argument and use FormData
   const handleUpdate = async (formFields, logoFile) => {
     setActionLoading(true);
     try {
@@ -300,6 +421,12 @@ export default function VendorProfile() {
       formData.append("description", formFields.description || "");
       formData.append("category", formFields.category);
       if (logoFile) formData.append("logo", logoFile);
+      // ── NEW: always append social fields (empty string clears them) ──
+      formData.append("website",   formFields.website   || "");
+      formData.append("instagram", formFields.instagram || "");
+      formData.append("facebook",  formFields.facebook  || "");
+      formData.append("twitter",   formFields.twitter   || "");
+      formData.append("youtube",   formFields.youtube   || "");
 
       const res = await api.put(`/vendors/${profile._id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -319,6 +446,14 @@ export default function VendorProfile() {
 
   if (fetching) return <Loader />;
 
+  // ── Check if vendor has any social links ──
+  const hasSocialLinks =
+    profile?.website ||
+    profile?.instagram ||
+    profile?.facebook ||
+    profile?.twitter ||
+    profile?.youtube;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/20 to-white">
       {/* ── Toast ── */}
@@ -329,15 +464,9 @@ export default function VendorProfile() {
               ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
               : "bg-red-50 text-red-700 border border-red-200"
           }`}>
-          <span className="text-lg">
-            {toast.type === "success" ? "✅" : "❌"}
-          </span>
+          <span className="text-lg">{toast.type === "success" ? "✅" : "❌"}</span>
           {toast.message}
-          <button
-            onClick={() => setToast(null)}
-            className="ml-2 opacity-50 hover:opacity-100 transition-opacity">
-            ✕
-          </button>
+          <button onClick={() => setToast(null)} className="ml-2 opacity-50 hover:opacity-100 transition-opacity">✕</button>
         </div>
       )}
 
@@ -361,12 +490,9 @@ export default function VendorProfile() {
         {!profile && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-5 bg-gradient-to-r from-violet-600 to-violet-700">
-              <h2 className="text-base font-bold text-white">
-                New Store Details
-              </h2>
+              <h2 className="text-base font-bold text-white">New Store Details</h2>
               <p className="text-violet-200 text-xs mt-0.5">
-                This information will be visible to customers on the
-                marketplace.
+                This information will be visible to customers on the marketplace.
               </p>
             </div>
             <div className="p-6">
@@ -385,17 +511,8 @@ export default function VendorProfile() {
             {/* Approval notice banner */}
             {!profile.isApproved && (
               <div className="flex items-start gap-3 px-5 py-4 bg-amber-50 border border-amber-200 rounded-xl">
-                <svg
-                  className="w-5 h-5 text-amber-600 mt-0.5 shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"
-                  />
+                <svg className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
                 </svg>
                 <p className="text-amber-800 text-sm font-medium">
                   Your store is under review. You'll be able to list products
@@ -410,7 +527,6 @@ export default function VendorProfile() {
                 {/* Card header */}
                 <div className="px-6 py-5 flex items-center justify-between border-b border-gray-100">
                   <div className="flex items-center gap-3">
-                    {/* ── CHANGED: show logo if available, else emoji fallback */}
                     {profile.logo ? (
                       <img
                         src={profile.logo}
@@ -423,9 +539,7 @@ export default function VendorProfile() {
                       </div>
                     )}
                     <div>
-                      <h2 className="text-base font-bold text-gray-900">
-                        {profile.storeName}
-                      </h2>
+                      <h2 className="text-base font-bold text-gray-900">{profile.storeName}</h2>
                       <div className="mt-1">
                         <ApprovalBadge isApproved={profile.isApproved} />
                       </div>
@@ -440,19 +554,9 @@ export default function VendorProfile() {
 
                 {/* Details */}
                 <div className="px-6">
-                  <DetailRow
-                    label="Store Name"
-                    value={profile.storeName}
-                  />
-                  <DetailRow
-                    label="Category"
-                    value={profile.category}
-                  />
-                  <DetailRow
-                    label="Description"
-                    value={profile.description}
-                  />
-                  {/* ── ADDED: logo in detail rows */}
+                  <DetailRow label="Store Name" value={profile.storeName} />
+                  <DetailRow label="Category" value={profile.category} />
+                  <DetailRow label="Description" value={profile.description} />
                   <DetailRow
                     label="Logo"
                     value={
@@ -465,10 +569,21 @@ export default function VendorProfile() {
                       ) : null
                     }
                   />
-                  <DetailRow
-                    label="Status"
-                    value={<ApprovalBadge isApproved={profile.isApproved} />}
-                  />
+                  <DetailRow label="Status" value={<ApprovalBadge isApproved={profile.isApproved} />} />
+
+                  {/* ── NEW: Social links in view mode (only shown if at least one exists) ── */}
+                  {hasSocialLinks && (
+                    <div className="pt-2 pb-1">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide pt-4 pb-2">
+                        Online Presence
+                      </p>
+                      <SocialRow label="Website"    value={profile.website}   icon="🌐" />
+                      <SocialRow label="Instagram"  value={profile.instagram} icon="📸" />
+                      <SocialRow label="Facebook"   value={profile.facebook}  icon="📘" />
+                      <SocialRow label="Twitter / X" value={profile.twitter}  icon="🐦" />
+                      <SocialRow label="YouTube"    value={profile.youtube}   icon="▶️" />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -478,12 +593,8 @@ export default function VendorProfile() {
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-6 py-5 bg-gradient-to-r from-violet-600 to-violet-700 flex items-center justify-between">
                   <div>
-                    <h2 className="text-base font-bold text-white">
-                      Edit Store Profile
-                    </h2>
-                    <p className="text-violet-200 text-xs mt-0.5">
-                      Update your store's public information
-                    </p>
+                    <h2 className="text-base font-bold text-white">Edit Store Profile</h2>
+                    <p className="text-violet-200 text-xs mt-0.5">Update your store's public information</p>
                   </div>
                   <button
                     onClick={() => setEditing(false)}
@@ -494,9 +605,15 @@ export default function VendorProfile() {
                 <div className="p-6">
                   <ProfileForm
                     initial={{
-                      storeName: profile.storeName || "",
+                      storeName:   profile.storeName   || "",
                       description: profile.description || "",
-                      category: profile.category || "",
+                      category:    profile.category    || "",
+                      // ── NEW: pre-fill social fields in edit mode ──
+                      website:   profile.website   || "",
+                      instagram: profile.instagram || "",
+                      facebook:  profile.facebook  || "",
+                      twitter:   profile.twitter   || "",
+                      youtube:   profile.youtube   || "",
                     }}
                     existingLogo={profile.logo || null}
                     onSubmit={handleUpdate}

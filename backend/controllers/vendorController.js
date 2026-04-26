@@ -7,7 +7,17 @@ const Service = require("../models/Service");
 // @access  Private (vendor)
 const createVendorProfile = async (req, res) => {
   try {
-    const { storeName, description, category, logo } = req.body;
+    const {
+      storeName,
+      description,
+      category,
+      logo,
+      website,
+      instagram,
+      facebook,
+      twitter,
+      youtube,
+    } = req.body;
 
     const existing = await VendorProfile.findOne({ userId: req.user._id });
     if (existing) {
@@ -24,6 +34,12 @@ const createVendorProfile = async (req, res) => {
       description,
       category,
       logo: logoUrl,
+      // ── Social media & website (all optional) ──
+      ...(website   && { website }),
+      ...(instagram && { instagram }),
+      ...(facebook  && { facebook }),
+      ...(twitter   && { twitter }),
+      ...(youtube   && { youtube }),
     });
 
     res.status(201).json({ profile });
@@ -72,7 +88,18 @@ const updateVendorProfile = async (req, res) => {
         .json({ message: "Not authorized to update this profile" });
     }
 
-    const allowedFields = ["storeName", "description", "category", "logo"];
+    const allowedFields = [
+      "storeName",
+      "description",
+      "category",
+      "logo",
+      // ── Social media & website (all optional) ──
+      "website",
+      "instagram",
+      "facebook",
+      "twitter",
+      "youtube",
+    ];
     if (isAdmin) allowedFields.push("isApproved");
 
     allowedFields.forEach((field) => {
@@ -129,7 +156,6 @@ const getVendorStore = async (req, res) => {
       Service.find({ vendorId: vendor._id }),
     ]);
 
-    // Attach vendor sale info directly onto each product/service
     const vendorSaleInfo = { onSale: vendor.onSale, salePercentage: vendor.salePercentage };
     const productsWithVendor = products.map(p => ({ ...p.toObject(), vendorId: { ...vendorSaleInfo, _id: vendor._id, storeName: vendor.storeName } }));
     const servicesWithVendor = services.map(s => ({ ...s.toObject(), vendorId: { ...vendorSaleInfo, _id: vendor._id, storeName: vendor.storeName } }));
@@ -153,11 +179,9 @@ const toggleSale = async (req, res) => {
     }
 
     if (vendor.onSale) {
-      // Turn sale OFF
       vendor.onSale = false;
       vendor.salePercentage = 0;
     } else {
-      // Turn sale ON
       const { salePercentage } = req.body;
       if (!salePercentage || salePercentage === 0) {
         return res.status(400).json({ message: "Please provide a sale percentage" });

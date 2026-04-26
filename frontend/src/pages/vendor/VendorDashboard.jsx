@@ -17,10 +17,7 @@ const StatusBadge = ({ status, type = "order" }) => {
   };
   const colors = type === "booking" ? bookingColors : orderColors;
   return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
-        colors[status] || "bg-gray-100 text-gray-600"
-      }`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${colors[status] || "bg-gray-100 text-gray-600"}`}>
       {status}
     </span>
   );
@@ -74,8 +71,6 @@ export default function VendorDashboard() {
   });
   const [recentOrders, setRecentOrders] = useState([]);
   const [recentBookings, setRecentBookings] = useState([]);
-
-  // Sale toggle state
   const [saleInput, setSaleInput] = useState("");
   const [saleLoading, setSaleLoading] = useState(false);
   const [saleMessage, setSaleMessage] = useState(null);
@@ -84,46 +79,29 @@ export default function VendorDashboard() {
     const fetchDashboard = async () => {
       try {
         setLoading(true);
-
         const profileRes = await api.get("/vendors/profile");
-        const profileData = profileRes.data;
-        setProfile(profileData);
+        setProfile(profileRes.data);
 
-        let productsArr = [];
-        let servicesArr = [];
-        let ordersArr = [];
-        let bookingsArr = [];
+        let productsArr = [], servicesArr = [], ordersArr = [], bookingsArr = [];
 
         try {
-          const productsRes = await api.get(`/products/my/list`);
-          productsArr = Array.isArray(productsRes.data)
-            ? productsRes.data
-            : productsRes.data.products || [];
-        } catch (err) {
-          productsArr = [];
-        }
+          const r = await api.get(`/products/my/list`);
+          productsArr = Array.isArray(r.data) ? r.data : r.data.products || [];
+        } catch { productsArr = []; }
 
         try {
-          const servicesRes = await api.get(`/services/my/list`);
-          servicesArr = Array.isArray(servicesRes.data)
-            ? servicesRes.data
-            : servicesRes.data.services || [];
-        } catch (err) {
-          servicesArr = [];
-        }
+          const r = await api.get(`/services/my/list`);
+          servicesArr = Array.isArray(r.data) ? r.data : r.data.services || [];
+        } catch { servicesArr = []; }
 
         try {
-          const ordersRes = await api.get("/orders/vendor");
-          ordersArr = Array.isArray(ordersRes.data)
-            ? ordersRes.data
-            : ordersRes.data.orders || [];
+          const r = await api.get("/orders/vendor");
+          ordersArr = Array.isArray(r.data) ? r.data : r.data.orders || [];
         } catch { ordersArr = []; }
 
         try {
-          const bookingsRes = await api.get("/bookings/vendor");
-          bookingsArr = Array.isArray(bookingsRes.data)
-            ? bookingsRes.data
-            : bookingsRes.data.bookings || [];
+          const r = await api.get("/bookings/vendor");
+          bookingsArr = Array.isArray(r.data) ? r.data : r.data.bookings || [];
         } catch { bookingsArr = []; }
 
         setStats({
@@ -141,7 +119,6 @@ export default function VendorDashboard() {
         setLoading(false);
       }
     };
-
     fetchDashboard();
   }, []);
 
@@ -216,14 +193,12 @@ export default function VendorDashboard() {
           <StatCard icon="📅" label="Pending Bookings" value={stats.pendingBookings} accent="bg-emerald-50 text-emerald-600" />
         </div>
 
-<<<<<<< HEAD
-        {/* Store Sale Section ─────────────────────────────────── */}
+        {/* Store Sale Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-lg">🏷️</span>
             <h2 className="text-base font-bold text-gray-800">Store Sale</h2>
           </div>
-
           {profile?.onSale ? (
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-green-100 text-green-700 font-bold text-sm animate-pulse">
@@ -236,9 +211,7 @@ export default function VendorDashboard() {
                 {saleLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                 End Sale
               </button>
-              {saleMessage && (
-                <span className="text-sm font-medium text-gray-500">{saleMessage}</span>
-              )}
+              {saleMessage && <span className="text-sm font-medium text-gray-500">{saleMessage}</span>}
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -261,17 +234,12 @@ export default function VendorDashboard() {
                 {saleLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                 Start Sale
               </button>
-              {saleMessage && (
-                <span className="text-sm font-medium text-red-500">{saleMessage}</span>
-              )}
+              {saleMessage && <span className="text-sm font-medium text-red-500">{saleMessage}</span>}
             </div>
           )}
         </div>
 
         {/* Recent Orders */}
-=======
-        {/* ── Recent Orders ── */}
->>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -290,32 +258,18 @@ export default function VendorDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50/70">
-<<<<<<< HEAD
-                    {["Customer", "Items", "Total", "Status", "Date"].map((h) => (
-                      <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
-                    ))}
-=======
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Items</th>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
->>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {recentOrders.map((order, i) => (
                     <tr key={order._id || i} className="hover:bg-blue-50/30 transition-colors duration-100">
                       <td className="px-6 py-4 font-medium text-gray-800">
-<<<<<<< HEAD
-                        {order.customer?.name || order.customerName || order.userId?.name || "Unknown"}
-=======
-                        {/* ✅ FIXED — reads customerId.name from backend */}
-                        {order.customerId?.name ||
-                          order.customer?.name ||
-                          order.customerName ||
-                          "Unknown"}
->>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
+                        {order.customerId?.name || order.customer?.name || order.customerName || "Unknown"}
                       </td>
                       <td className="px-6 py-4 text-gray-500">
                         {order.items?.length ?? order.itemCount ?? "—"}
@@ -326,12 +280,6 @@ export default function VendorDashboard() {
                       </td>
                       <td className="px-6 py-4">
                         <StatusBadge status={order.status} type="order" />
-<<<<<<< HEAD
-=======
-                      </td>
-                      <td className="px-6 py-4 text-gray-400">
-                        {formatDate(order.createdAt)}
->>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
                       </td>
                       <td className="px-6 py-4 text-gray-400">{formatDate(order.createdAt)}</td>
                     </tr>
@@ -342,11 +290,7 @@ export default function VendorDashboard() {
           )}
         </div>
 
-<<<<<<< HEAD
         {/* Recent Bookings */}
-=======
-        {/* ── Recent Bookings ── */}
->>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -365,31 +309,17 @@ export default function VendorDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50/70">
-<<<<<<< HEAD
-                    {["Customer", "Service", "Scheduled", "Status"].map((h) => (
-                      <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
-                    ))}
-=======
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Service</th>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Scheduled</th>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
->>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {recentBookings.map((booking, i) => (
                     <tr key={booking._id || i} className="hover:bg-blue-50/30 transition-colors duration-100">
                       <td className="px-6 py-4 font-medium text-gray-800">
-<<<<<<< HEAD
-                        {booking.customer?.name || booking.customerName || booking.userId?.name || "Unknown"}
-=======
-                        {/* ✅ FIXED — reads customerId.name from backend */}
-                        {booking.customerId?.name ||
-                          booking.customer?.name ||
-                          booking.customerName ||
-                          "Unknown"}
->>>>>>> 24719223e2eb304c7b3d0bbd9f8fabd96b752b3d
+                        {booking.customerId?.name || booking.customer?.name || booking.customerName || "Unknown"}
                       </td>
                       <td className="px-6 py-4 text-gray-600">
                         {booking.service?.name || booking.serviceName || booking.serviceId?.name || "—"}

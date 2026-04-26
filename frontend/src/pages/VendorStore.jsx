@@ -92,7 +92,6 @@ const VendorStore = () => {
             {store.storeName?.charAt(0).toUpperCase()}
           </div>
 
-          {/* Info */}
           <div className="flex-1 text-center sm:text-left">
             <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
               <h1 className="text-2xl font-bold text-gray-800">{store.storeName}</h1>
@@ -110,6 +109,14 @@ const VendorStore = () => {
             </span>
             <p className="text-gray-500 text-sm mt-2">{store.description}</p>
             <p className="text-gray-400 text-sm mt-1">By {store.userId?.name}</p>
+
+            {user?.role === "customer" && store.userId?._id && (
+              <button
+                onClick={() => navigate(`/chat/${store.userId._id}`)}
+                className="mt-4 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.84L3 20l1.09-3.27C3.4 15.46 3 13.77 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
 
             {/* ── NEW: Social media links row ── */}
             {hasSocialLinks && (

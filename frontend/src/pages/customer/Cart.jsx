@@ -52,7 +52,6 @@ const EmptyCart = () => (
   </div>
 );
 
-/* ── Price helper ── */
 const getItemPrice = (item) => {
   const product = item.productId;
   if (!product) return parseFloat(item.price || 0);
@@ -64,19 +63,17 @@ const getItemPrice = (item) => {
   return Math.round(originalPrice - (originalPrice * effectiveDiscount / 100));
 };
 
-/* ── Cart Item Row ── */
 const CartItem = ({ item, onIncrease, onDecrease, onRemove, updating }) => {
   const image = item.productId?.images?.[0] || item.productId?.image || "https://placehold.co/80x80?text=?";
   const name = item.productId?.name || item.name || "Unknown Product";
   const originalPrice = parseFloat(item.productId?.price || item.price || 0);
   const discountedPrice = getItemPrice(item);
   const hasDiscount = discountedPrice < originalPrice;
-  const subtotal = (discountedPrice * item.quantity).toFixed(2);
+  const itemSubtotal = (discountedPrice * item.quantity).toFixed(2);
   const isUpdating = updating === item._id;
 
   return (
     <div className={`flex gap-4 p-4 sm:p-5 transition-opacity ${isUpdating ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
-      {/* Image */}
       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
         <img
           src={image}
@@ -86,7 +83,6 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, updating }) => {
         />
       </div>
 
-      {/* Details */}
       <div className="flex-1 min-w-0 flex flex-col gap-1">
         <h3 className="text-sm font-bold text-slate-800 leading-snug line-clamp-2">{name}</h3>
         {item.productId?.category && (
@@ -108,10 +104,8 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, updating }) => {
         )}
       </div>
 
-      {/* Quantity + Remove */}
       <div className="flex flex-col items-end justify-between gap-2 shrink-0">
-        <p className="text-sm font-black text-slate-800">₹{subtotal}</p>
-
+        <p className="text-sm font-black text-slate-800">₹{itemSubtotal}</p>
         <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
           <button
             onClick={() => onDecrease(item._id, item.quantity)}
@@ -133,7 +127,6 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, updating }) => {
             </svg>
           </button>
         </div>
-
         <button
           onClick={() => onRemove(item._id)}
           className="text-xs text-red-400 hover:text-red-600 transition-colors flex items-center gap-1">
@@ -147,19 +140,11 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, updating }) => {
   );
 };
 
-/* ── Coupon Section ── */
-const CouponSection = ({
-  subtotal,
-  cartItems,
-  appliedCoupon,
-  onApply,
-  onRemove,
-}) => {
+const CouponSection = ({ subtotal, cartItems, appliedCoupon, onApply, onRemove }) => {
   const [code, setCode] = useState("");
   const [validating, setValidating] = useState(false);
   const [error, setCouponError] = useState("");
 
-  // Clear input error when user starts typing again
   const handleChange = (e) => {
     setCode(e.target.value.toUpperCase());
     if (error) setCouponError("");
@@ -168,66 +153,37 @@ const CouponSection = ({
   const handleApply = async () => {
     const trimmed = code.trim();
     if (!trimmed) return setCouponError("Please enter a coupon code.");
-
-    // vendorId comes from the first item in the cart
-    const vendorId =
-      cartItems[0]?.productId?.vendorId?._id ||
-      cartItems[0]?.productId?.vendorId;
-    if (!vendorId)
-      return setCouponError("Unable to determine vendor. Try refreshing.");
-
+    const vendorId = cartItems[0]?.productId?.vendorId?._id || cartItems[0]?.productId?.vendorId;
+    if (!vendorId) return setCouponError("Unable to determine vendor. Try refreshing.");
     setValidating(true);
     setCouponError("");
     try {
-      const res = await api.post("/coupons/validate", {
-        code: trimmed,
-        vendorId,
-        cartTotal: subtotal,
-      });
-      // API is expected to return: { discountAmount, couponCode } or similar
+      const res = await api.post("/coupons/validate", { code: trimmed, vendorId, cartTotal: subtotal });
       const { discountAmount, couponCode } = res.data;
       onApply({ code: couponCode || trimmed, discountAmount });
       setCode("");
     } catch (err) {
-      setCouponError(
-        err.response?.data?.message || "Invalid or expired coupon code."
-      );
+      setCouponError(err.response?.data?.message || "Invalid or expired coupon code.");
     } finally {
       setValidating(false);
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") handleApply();
-  };
+  const handleKeyDown = (e) => { if (e.key === "Enter") handleApply(); };
 
-  // ── Coupon already applied state
   if (appliedCoupon) {
     return (
       <div className="rounded-xl border border-green-200 bg-green-50 p-4 flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-              <svg
-                className="w-3 h-3 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={3}>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
+              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <span className="text-sm font-bold text-green-800 font-mono tracking-widest">
-              {appliedCoupon.code}
-            </span>
+            <span className="text-sm font-bold text-green-800 font-mono tracking-widest">{appliedCoupon.code}</span>
           </div>
-          <button
-            onClick={onRemove}
-            className="text-xs text-green-700 hover:text-red-500 font-semibold underline underline-offset-2 transition-colors shrink-0">
+          <button onClick={onRemove} className="text-xs text-green-700 hover:text-red-500 font-semibold underline underline-offset-2 transition-colors shrink-0">
             Remove
           </button>
         </div>
@@ -238,12 +194,9 @@ const CouponSection = ({
     );
   }
 
-  // ── Input state
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-        Have a coupon?
-      </p>
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Have a coupon?</p>
       <div className="flex gap-2">
         <input
           type="text"
@@ -260,42 +213,17 @@ const CouponSection = ({
           disabled={validating}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors shrink-0 flex items-center gap-1.5">
           {validating ? (
-            <svg
-              className="animate-spin w-3.5 h-3.5"
-              fill="none"
-              viewBox="0 0 24 24">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth={4}
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v8z"
-              />
+            <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
             </svg>
-          ) : (
-            "Apply"
-          )}
+          ) : "Apply"}
         </button>
       </div>
       {error && (
         <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">
-          <svg
-            className="w-3.5 h-3.5 shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}>
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"
-            />
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
           </svg>
           {error}
         </p>
@@ -304,9 +232,6 @@ const CouponSection = ({
   );
 };
 
-/* ══════════════════════════════════════════
-   Cart Page
-══════════════════════════════════════════ */
 const Cart = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -317,11 +242,8 @@ const Cart = () => {
   const [updating, setUpdating] = useState(null);
   const [placing, setPlacing] = useState(false);
   const [toast, setToast] = useState(null);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
 
-  // ── Coupon state
-  const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discountAmount }
-
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (!user) navigate("/login", { replace: true });
   }, [user, navigate]);
@@ -338,9 +260,7 @@ const Cart = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (user) fetchCart();
-  }, [user, fetchCart]);
+  useEffect(() => { if (user) fetchCart(); }, [user, fetchCart]);
 
   useEffect(() => {
     if (!toast) return;
@@ -439,7 +359,6 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex items-center justify-between">
           <div>
@@ -473,7 +392,6 @@ const Cart = () => {
       ) : (
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Cart Items */}
             <div className="lg:col-span-2">
               <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100">
                 {cartItems.map((item) => (
@@ -489,12 +407,10 @@ const Cart = () => {
               </div>
             </div>
 
-            {/* Order Summary */}
             <div className="lg:col-span-1">
               <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sticky top-24 flex flex-col gap-5">
                 <h2 className="text-base font-black text-slate-900">Order Summary</h2>
 
-                {/* Line items */}
                 <div className="space-y-2.5 text-sm">
                   {cartItems.map((item) => {
                     const discountedPrice = getItemPrice(item);
@@ -513,13 +429,10 @@ const Cart = () => {
                   })}
                 </div>
 
-                {/* Subtotal / Discount / Total */}
                 <div className="border-t border-slate-100 pt-4 space-y-2 text-sm">
                   <div className="flex justify-between text-slate-600">
                     <span>Subtotal</span>
-                    <span className="font-semibold">
-                      ₹{subtotal.toFixed(2)}
-                    </span>
+                    <span className="font-semibold">₹{subtotal.toFixed(2)}</span>
                   </div>
                   {totalSavings > 0 && (
                     <div className="flex justify-between text-green-600">
@@ -531,49 +444,30 @@ const Cart = () => {
                     <span>Shipping</span>
                     <span className="text-green-600 font-semibold">Free</span>
                   </div>
-                  {/* Discount row — only rendered when a coupon is applied */}
                   {appliedCoupon && (
                     <div className="flex justify-between text-green-600">
                       <span className="flex items-center gap-1">
-                        <svg
-                          className="w-3.5 h-3.5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}>
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-                          />
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                         </svg>
                         Discount ({appliedCoupon.code})
                       </span>
-                      <span className="font-semibold">
-                        − ₹{discount.toFixed(2)}
-                      </span>
+                      <span className="font-semibold">− ₹{discount.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
 
-                {/* Total */}
                 <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
                   <span className="font-black text-slate-900">Total</span>
                   <span className="text-xl font-black text-blue-600">₹{total.toFixed(2)}</span>
                   <div className="text-right">
-                    <span className="text-xl font-black text-blue-600">
-                      ₹{total.toFixed(2)}
-                    </span>
-                    {/* Strike-through original total when discount is active */}
+                    <span className="text-xl font-black text-blue-600">₹{total.toFixed(2)}</span>
                     {appliedCoupon && (
-                      <p className="text-xs text-slate-400 line-through mt-0.5">
-                        ₹{subtotal.toFixed(2)}
-                      </p>
+                      <p className="text-xs text-slate-400 line-through mt-0.5">₹{subtotal.toFixed(2)}</p>
                     )}
                   </div>
                 </div>
 
-                {/* ── Coupon Section ── */}
                 <div className="border-t border-slate-100 pt-4">
                   <CouponSection
                     subtotal={subtotal}
@@ -584,7 +478,6 @@ const Cart = () => {
                   />
                 </div>
 
-                {/* Place Order */}
                 <button
                   onClick={handlePlaceOrder}
                   disabled={placing || cartItems.length === 0}

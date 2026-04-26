@@ -17,10 +17,7 @@ const StatusBadge = ({ status, type = "order" }) => {
   };
   const colors = type === "booking" ? bookingColors : orderColors;
   return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
-        colors[status] || "bg-gray-100 text-gray-600"
-      }`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${colors[status] || "bg-gray-100 text-gray-600"}`}>
       {status}
     </span>
   );
@@ -74,8 +71,6 @@ export default function VendorDashboard() {
   });
   const [recentOrders, setRecentOrders] = useState([]);
   const [recentBookings, setRecentBookings] = useState([]);
-
-  // Sale toggle state
   const [saleInput, setSaleInput] = useState("");
   const [saleLoading, setSaleLoading] = useState(false);
   const [saleMessage, setSaleMessage] = useState(null);
@@ -84,46 +79,29 @@ export default function VendorDashboard() {
     const fetchDashboard = async () => {
       try {
         setLoading(true);
-
         const profileRes = await api.get("/vendors/profile");
-        const profileData = profileRes.data;
-        setProfile(profileData);
+        setProfile(profileRes.data);
 
-        let productsArr = [];
-        let servicesArr = [];
-        let ordersArr = [];
-        let bookingsArr = [];
+        let productsArr = [], servicesArr = [], ordersArr = [], bookingsArr = [];
 
         try {
-          const productsRes = await api.get(`/products/my/list`);
-          productsArr = Array.isArray(productsRes.data)
-            ? productsRes.data
-            : productsRes.data.products || [];
-        } catch (err) {
-          productsArr = [];
-        }
+          const r = await api.get(`/products/my/list`);
+          productsArr = Array.isArray(r.data) ? r.data : r.data.products || [];
+        } catch { productsArr = []; }
 
         try {
-          const servicesRes = await api.get(`/services/my/list`);
-          servicesArr = Array.isArray(servicesRes.data)
-            ? servicesRes.data
-            : servicesRes.data.services || [];
-        } catch (err) {
-          servicesArr = [];
-        }
+          const r = await api.get(`/services/my/list`);
+          servicesArr = Array.isArray(r.data) ? r.data : r.data.services || [];
+        } catch { servicesArr = []; }
 
         try {
-          const ordersRes = await api.get("/orders/vendor");
-          ordersArr = Array.isArray(ordersRes.data)
-            ? ordersRes.data
-            : ordersRes.data.orders || [];
+          const r = await api.get("/orders/vendor");
+          ordersArr = Array.isArray(r.data) ? r.data : r.data.orders || [];
         } catch { ordersArr = []; }
 
         try {
-          const bookingsRes = await api.get("/bookings/vendor");
-          bookingsArr = Array.isArray(bookingsRes.data)
-            ? bookingsRes.data
-            : bookingsRes.data.bookings || [];
+          const r = await api.get("/bookings/vendor");
+          bookingsArr = Array.isArray(r.data) ? r.data : r.data.bookings || [];
         } catch { bookingsArr = []; }
 
         setStats({
@@ -141,7 +119,6 @@ export default function VendorDashboard() {
         setLoading(false);
       }
     };
-
     fetchDashboard();
   }, []);
 
@@ -223,7 +200,6 @@ export default function VendorDashboard() {
             <span className="text-lg">🏷️</span>
             <h2 className="text-base font-bold text-gray-800">Store Sale</h2>
           </div>
-
           {profile?.onSale ? (
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-green-100 text-green-700 font-bold text-sm animate-pulse">
@@ -236,9 +212,7 @@ export default function VendorDashboard() {
                 {saleLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                 End Sale
               </button>
-              {saleMessage && (
-                <span className="text-sm font-medium text-gray-500">{saleMessage}</span>
-              )}
+              {saleMessage && <span className="text-sm font-medium text-gray-500">{saleMessage}</span>}
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -261,9 +235,7 @@ export default function VendorDashboard() {
                 {saleLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                 Start Sale
               </button>
-              {saleMessage && (
-                <span className="text-sm font-medium text-red-500">{saleMessage}</span>
-              )}
+              {saleMessage && <span className="text-sm font-medium text-red-500">{saleMessage}</span>}
             </div>
           )}
         </div>

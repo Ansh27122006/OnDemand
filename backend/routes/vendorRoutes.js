@@ -66,6 +66,11 @@ router.get("/profile", protect, async (req, res) => {
       onSale: profile.onSale,
       salePercentage: profile.salePercentage,
       userId: profile.userId,
+      website: profile.website,
+      instagram: profile.instagram,
+      facebook: profile.facebook,
+      twitter: profile.twitter,
+      youtube: profile.youtube,
     });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

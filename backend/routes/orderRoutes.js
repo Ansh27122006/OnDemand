@@ -14,6 +14,7 @@ const {
   getVendorOrders,
   updateOrderStatus,
   getOrderById,
+  generateInvoice,
 } = require("../controllers/orderController");
 
 /**
@@ -92,6 +93,36 @@ router.get("/vendor", protect, authorizeRoles("vendor"), getVendorOrders);
  *         description: Order status updated
  */
 router.put("/:id/status", protect, authorizeRoles("vendor"), updateOrderStatus);
+
+// GET   /api/orders/:id/invoice -> Download PDF invoice (customer only)
+/**
+ * @swagger
+ * /orders/{id}/invoice:
+ *   get:
+ *     summary: Download PDF invoice for an order
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: PDF invoice streamed successfully
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       403:
+ *         description: Not authorised to download this invoice
+ *       404:
+ *         description: Order not found
+ */
+router.get("/:id/invoice", protect, authorizeRoles("customer"), generateInvoice);
 
 // GET   /api/orders/:id      -> Get single order by ID (customer + vendor)
 /**

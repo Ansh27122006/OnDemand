@@ -181,6 +181,35 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // ── Invoice download state ────────────────────────────────────────────────
+  const [invoiceDownloading, setInvoiceDownloading] = useState(false);
+  const [invoiceError, setInvoiceError] = useState(null);
+
+  const handleDownloadInvoice = async () => {
+    if (!order) return;
+    setInvoiceDownloading(true);
+    setInvoiceError(null);
+    try {
+      const response = await api.get(`/orders/${order._id}/invoice`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `invoice-${order._id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setInvoiceError("Failed to download invoice. Please try again.");
+      setTimeout(() => setInvoiceError(null), 4000);
+    } finally {
+      setInvoiceDownloading(false);
+    }
+  };
+  // ─────────────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     const fetchOrder = async () => {
       try {
@@ -211,7 +240,7 @@ export default function OrderDetail() {
     <div className="min-h-screen bg-slate-50">
       {/* ── Top Bar ── */}
       <div className="bg-white border-b border-slate-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
           <Link
             to="/customer/orders"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors"
@@ -221,8 +250,42 @@ export default function OrderDetail() {
             </svg>
             Back to Orders
           </Link>
-          <StatusBadge status={order.status} />
+
+          <div className="flex items-center gap-3">
+            {/* ── Download Invoice button ── */}
+            <button
+              onClick={handleDownloadInvoice}
+              disabled={invoiceDownloading}
+              title="Download Invoice"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-lg transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed">
+              {invoiceDownloading ? (
+                <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+              )}
+              {invoiceDownloading ? "Downloading…" : "Download Invoice"}
+            </button>
+
+            <StatusBadge status={order.status} />
+          </div>
         </div>
+
+        {/* Inline error below top bar */}
+        {invoiceError && (
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-3">
+            <p className="text-xs text-red-500 flex items-center gap-1.5">
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
+              </svg>
+              {invoiceError}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
@@ -342,7 +405,6 @@ export default function OrderDetail() {
                 {STEPS.map((step, i) => {
                   const state = getStepState(step.key, order.status);
                   const isLast = i === STEPS.length - 1;
-                  // Show date for placed step
                   const date =
                     step.key === "placed"
                       ? new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })

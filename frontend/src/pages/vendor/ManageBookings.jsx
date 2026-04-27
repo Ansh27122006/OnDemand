@@ -14,6 +14,10 @@ const STATUS_STYLES = {
     badge: "bg-emerald-100 text-emerald-700 border border-emerald-300",
     dot: "bg-emerald-400",
   },
+  expired: {
+    badge: "bg-red-100 text-red-700 border border-red-300",
+    dot: "bg-red-400",
+  },
 };
 
 const formatDate = (dateStr) =>
@@ -153,11 +157,34 @@ export default function ManageBookings() {
       );
       showToast(`Booking marked as "${newStatus}" successfully.`);
     } catch (err) {
-      console.error("Failed to update status:", err);
-      showToast("Failed to update status. Please try again.");
+      const msg = err.response?.data?.message || "Failed to update status. Please try again.";
+      showToast(msg);
     } finally {
       setUpdating(null);
     }
+  };
+
+  // ── Get available status transitions
+  const getAvailableStatuses = (currentStatus) => {
+    const allStatuses = ["pending", "confirmed", "completed"];
+    
+    // Once completed, no transitions allowed
+    if (currentStatus === "completed") {
+      return [];
+    }
+    
+    // Once confirmed, can only go to completed (not back to pending)
+    if (currentStatus === "confirmed") {
+      return ["completed"];
+    }
+    
+    // Once expired, no transitions allowed
+    if (currentStatus === "expired") {
+      return [];
+    }
+    
+    // From pending, show available transitions
+    return allStatuses.filter(s => s !== currentStatus);
   };
 
   return (
@@ -292,14 +319,17 @@ export default function ManageBookings() {
                         <div className="relative">
                           <select
                             value={booking.status}
-                            disabled={updating === booking._id}
+                            disabled={updating === booking._id || getAvailableStatuses(booking.status).length === 0}
                             onChange={(e) =>
                               handleStatusChange(booking._id, e.target.value)
                             }
                             className="appearance-none w-full pl-3 pr-8 py-2 text-xs font-medium bg-white border border-slate-200 rounded-lg text-slate-700 cursor-pointer hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
-                            <option value="pending">Pending</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="completed">Completed</option>
+                            <option value={booking.status}>{booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</option>
+                            {getAvailableStatuses(booking.status).map((status) => (
+                              <option key={status} value={status}>
+                                {status.charAt(0).toUpperCase() + status.slice(1)}
+                              </option>
+                            ))}
                           </select>
                           <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
                             {updating === booking._id ? (

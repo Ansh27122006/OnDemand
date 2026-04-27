@@ -7,6 +7,25 @@ const {
   sendBookingStatusUpdate,
 } = require("../utils/emailService");
 
+// ─────────────────────────────────────────────
+// Helper: Auto-expire bookings with passed dates
+// ─────────────────────────────────────────────
+const checkAndExpireBookings = async (bookings) => {
+  const now = new Date();
+  for (const booking of bookings) {
+    if (
+      booking.status === "pending" || 
+      booking.status === "confirmed"
+    ) {
+      if (new Date(booking.scheduledDate) < now) {
+        booking.status = "expired";
+        await booking.save();
+      }
+    }
+  }
+  return bookings;
+};
+
 // @desc    Create a new booking
 // @route   POST /api/bookings
 // @access  Customer only
@@ -63,9 +82,12 @@ const createBooking = async (req, res) => {
 // @access  Customer only
 const getMyBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ customerId: req.user._id })
+    let bookings = await Booking.find({ customerId: req.user._id })
       .populate("serviceId", "name price")
       .populate("vendorId", "storeName");
+
+    // Auto-expire bookings with passed dates
+    bookings = await checkAndExpireBookings(bookings);
 
     res.status(200).json(bookings);
   } catch (error) {
@@ -83,9 +105,12 @@ const getVendorBookings = async (req, res) => {
       return res.status(404).json({ message: "Vendor profile not found" });
     }
 
-    const bookings = await Booking.find({ vendorId: vendorProfile._id })
+    let bookings = await Booking.find({ vendorId: vendorProfile._id })
       .populate("customerId", "name email")
       .populate("serviceId", "name");
+
+    // Auto-expire bookings with passed dates
+    bookings = await checkAndExpireBookings(bookings);
 
     res.status(200).json(bookings);
   } catch (error) {
@@ -127,6 +152,26 @@ const updateBookingStatus = async (req, res) => {
         .json({ message: "Not authorized to update this booking" });
     }
 
+    // ─── Status Transition Validation ───────────────────────────────────
+    // Once a booking is "completed", it cannot be changed to "pending" or "confirmed"
+    if (booking.status === "completed") {
+      return res.status(400).json({
+        message: "Cannot update status. Booking is already completed and cannot be modified.",
+      });
+    }
+    // Once a booking is "confirmed", it cannot go back to "pending"
+    if (booking.status === "confirmed" && status === "pending") {
+      return res.status(400).json({
+        message: "Cannot change status from confirmed back to pending.",
+      });
+    }
+    // Cannot update if already expired
+    if (booking.status === "expired") {
+      return res.status(400).json({
+        message: "Cannot update status. Booking has expired.",
+      });
+    }
+
     booking.status = status;
     const updatedBooking = await booking.save();
 
@@ -163,6 +208,15 @@ const getBookingById = async (req, res) => {
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Auto-expire booking if scheduled date has passed
+    if (
+      (booking.status === "pending" || booking.status === "confirmed") &&
+      new Date(booking.scheduledDate) < new Date()
+    ) {
+      booking.status = "expired";
+      await booking.save();
     }
 
     res.status(200).json(booking);

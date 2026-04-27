@@ -73,6 +73,9 @@ const approveVendor = async (req, res) => {
     }
 
     vendor.isApproved = true;
+    vendor.status = "approved";
+    vendor.blockedUntil = null;
+    vendor.blockReason = "";
     const updatedVendor = await vendor.save();
 
     // ── Email: vendor approved (fire-and-forget) ──────────────────────────────
@@ -104,6 +107,9 @@ const rejectVendor = async (req, res) => {
     }
 
     vendor.isApproved = false;
+    vendor.status = "rejected";
+    vendor.blockedUntil = null;
+    vendor.blockReason = "";
     const updatedVendor = await vendor.save();
 
     // ── Email: vendor rejected (fire-and-forget) ──────────────────────────────
@@ -116,6 +122,64 @@ const rejectVendor = async (req, res) => {
     res
       .status(200)
       .json({ message: "Vendor rejected successfully", vendor: updatedVendor });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Block a vendor profile temporarily
+// @route   PUT /api/admin/vendors/:id/block
+// @access  Admin
+const blockVendor = async (req, res) => {
+  try {
+    const { blockedUntil, blockReason } = req.body;
+    
+    if (!blockedUntil) {
+      return res.status(400).json({ message: "Blocked until date is required" });
+    }
+
+    const vendor = await VendorProfile.findById(req.params.id).populate(
+      "userId",
+      "name email"
+    );
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor profile not found" });
+    }
+
+    vendor.status = "blocked";
+    vendor.blockedUntil = new Date(blockedUntil);
+    vendor.blockReason = blockReason || "";
+    const updatedVendor = await vendor.save();
+
+    res
+      .status(200)
+      .json({ message: "Vendor blocked successfully", vendor: updatedVendor });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Unblock a vendor profile
+// @route   PUT /api/admin/vendors/:id/unblock
+// @access  Admin
+const unblockVendor = async (req, res) => {
+  try {
+    const vendor = await VendorProfile.findById(req.params.id).populate(
+      "userId",
+      "name email"
+    );
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor profile not found" });
+    }
+
+    vendor.status = "approved";
+    vendor.blockedUntil = null;
+    vendor.blockReason = "";
+    const updatedVendor = await vendor.save();
+
+    res
+      .status(200)
+      .json({ message: "Vendor unblocked successfully", vendor: updatedVendor });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -208,6 +272,8 @@ module.exports = {
   getAllVendors,
   approveVendor,
   rejectVendor,
+  blockVendor,
+  unblockVendor,
   deleteProduct,
   getAllServices,
   deleteService,

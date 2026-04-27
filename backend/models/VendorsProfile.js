@@ -62,6 +62,19 @@ const vendorProfileSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected", "blocked"],
+    default: "pending",
+  },
+  blockedUntil: {
+    type: Date,
+    default: null,
+  },
+  blockReason: {
+    type: String,
+    default: "",
+  },
   onSale: {
     type: Boolean,
     default: false,

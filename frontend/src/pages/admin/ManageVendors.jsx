@@ -4,18 +4,47 @@ import api from "../../api/axios";
 import Loader from "../../components/Loader";
 
 /* ── Status Badge ── */
-const StatusBadge = ({ isApproved }) =>
-  isApproved ? (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-600 border border-green-100 text-xs font-bold rounded-full">
-      <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-      Approved
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-600 border border-amber-100 text-xs font-bold rounded-full">
-      <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-      Pending
+const StatusBadge = ({ status }) => {
+  const statusConfig = {
+    pending: {
+      bg: "bg-amber-50",
+      text: "text-amber-600",
+      border: "border-amber-100",
+      dot: "bg-amber-500",
+      label: "Pending",
+    },
+    approved: {
+      bg: "bg-green-50",
+      text: "text-green-600",
+      border: "border-green-100",
+      dot: "bg-green-500",
+      label: "Approved",
+    },
+    rejected: {
+      bg: "bg-red-50",
+      text: "text-red-600",
+      border: "border-red-100",
+      dot: "bg-red-500",
+      label: "Rejected",
+    },
+    blocked: {
+      bg: "bg-slate-50",
+      text: "text-slate-600",
+      border: "border-slate-200",
+      dot: "bg-slate-500",
+      label: "Blocked",
+    },
+  };
+
+  const config = statusConfig[status] || statusConfig.pending;
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 ${config.bg} ${config.text} border ${config.border} text-xs font-bold rounded-full`}>
+      <span className={`w-1.5 h-1.5 ${config.dot} rounded-full ${status === "approved" ? "animate-pulse" : ""}`} />
+      {config.label}
     </span>
   );
+};
 
 /* ── Toast ── */
 const Toast = ({ message, type, onClose }) => (
@@ -69,7 +98,7 @@ const Toast = ({ message, type, onClose }) => (
 );
 
 /* ── Filter Tabs ── */
-const tabs = ["All", "Pending", "Approved"];
+const tabs = ["All", "Pending", "Approved", "Rejected", "Blocked"];
 
 /* ── Empty State ── */
 const EmptyState = ({ filter }) => (
@@ -140,7 +169,7 @@ const ProfileModal = ({ vendor, onClose }) => (
             <h3 className="text-base font-black text-white">
               {vendor.storeName}
             </h3>
-            <StatusBadge isApproved={vendor.isApproved} />
+            <StatusBadge status={vendor.status || (vendor.isApproved ? "approved" : "pending")} />
           </div>
         </div>
         <button
@@ -208,6 +237,31 @@ const ProfileModal = ({ vendor, onClose }) => (
           )}
         </div>
 
+        {/* Block Info */}
+        {vendor.status === "blocked" && vendor.blockedUntil && (
+          <div className="bg-slate-100 rounded-xl p-4 space-y-2">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
+              Block Status
+            </p>
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-500">Blocked Until</span>
+              <span className="font-semibold text-slate-800">
+                {new Date(vendor.blockedUntil).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </span>
+            </div>
+            {vendor.blockReason && (
+              <div>
+                <p className="text-xs text-slate-400 mb-1">Reason</p>
+                <p className="text-sm text-slate-700">{vendor.blockReason}</p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Registered date */}
         {vendor.createdAt && (
           <p className="text-xs text-slate-400 text-center">
@@ -233,6 +287,107 @@ const ProfileModal = ({ vendor, onClose }) => (
   </div>
 );
 
+/* ── Block Modal ── */
+const BlockModal = ({ vendor, onClose, onBlock }) => {
+  const [blockedUntil, setBlockedUntil] = useState("");
+  const [blockReason, setBlockReason] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!blockedUntil) {
+      return;
+    }
+    setIsLoading(true);
+    await onBlock(vendor._id, blockedUntil, blockReason);
+    setIsLoading(false);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div
+        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md animate-scale-in overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-red-600 to-red-500 px-6 py-5 flex items-center justify-between">
+          <h3 className="text-base font-black text-white">Block Vendor</h3>
+          <button
+            onClick={onClose}
+            className="text-white/70 hover:text-white text-xl leading-none transition-colors">
+            ✕
+          </button>
+        </div>
+
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <p className="text-xs text-slate-400 mb-2">
+              Vendor: <span className="font-semibold text-slate-800">{vendor.storeName}</span>
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              Block Until *
+            </label>
+            <input
+              type="date"
+              value={blockedUntil}
+              min={today}
+              onChange={(e) => setBlockedUntil(e.target.value)}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              Reason (Optional)
+            </label>
+            <textarea
+              value={blockReason}
+              onChange={(e) => setBlockReason(e.target.value)}
+              placeholder="Why are you blocking this vendor?"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition resize-none"
+              rows={3}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition-colors">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading || !blockedUntil}
+              className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  Blocking...
+                </>
+              ) : (
+                "Block Vendor"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 /* ══════════════════════════════════════════
    ManageVendors Page
 ══════════════════════════════════════════ */
@@ -245,6 +400,7 @@ const ManageVendors = () => {
   const [activeTab, setActiveTab] = useState("All");
   const [actioningId, setActioningId] = useState(null);
   const [viewingVendor, setViewingVendor] = useState(null);
+  const [blockingVendor, setBlockingVendor] = useState(null);
   const [toast, setToast] = useState(null);
 
   const fetchVendors = async () => {
@@ -276,7 +432,7 @@ const ManageVendors = () => {
     try {
       await api.put(`/admin/vendors/${id}/approve`);
       setVendors((prev) =>
-        prev.map((v) => (v._id === id ? { ...v, isApproved: true } : v))
+        prev.map((v) => (v._id === id ? { ...v, isApproved: true, status: "approved" } : v))
       );
       setToast({ message: "Vendor approved successfully.", type: "success" });
     } catch {
@@ -292,7 +448,7 @@ const ManageVendors = () => {
     try {
       await api.put(`/admin/vendors/${id}/reject`);
       setVendors((prev) =>
-        prev.map((v) => (v._id === id ? { ...v, isApproved: false } : v))
+        prev.map((v) => (v._id === id ? { ...v, isApproved: false, status: "rejected" } : v))
       );
       setToast({ message: "Vendor rejected successfully.", type: "success" });
     } catch {
@@ -302,20 +458,56 @@ const ManageVendors = () => {
     }
   };
 
+  // ── Block vendor
+  const handleBlock = async (id, blockedUntil, blockReason) => {
+    setActioningId(id);
+    try {
+      await api.put(`/admin/vendors/${id}/block`, { blockedUntil, blockReason });
+      setVendors((prev) =>
+        prev.map((v) => (v._id === id ? { ...v, status: "blocked", blockedUntil, blockReason } : v))
+      );
+      setToast({ message: "Vendor blocked successfully.", type: "success" });
+    } catch {
+      setToast({ message: "Failed to block vendor.", type: "error" });
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  // ── Unblock vendor
+  const handleUnblock = async (id) => {
+    setActioningId(id);
+    try {
+      await api.put(`/admin/vendors/${id}/unblock`);
+      setVendors((prev) =>
+        prev.map((v) => (v._id === id ? { ...v, status: "approved", blockedUntil: null, blockReason: "" } : v))
+      );
+      setToast({ message: "Vendor unblocked successfully.", type: "success" });
+    } catch {
+      setToast({ message: "Failed to unblock vendor.", type: "error" });
+    } finally {
+      setActioningId(null);
+    }
+  };
+
   // ── Tab counts
   const counts = useMemo(
     () => ({
       All: vendors.length,
-      Pending: vendors.filter((v) => !v.isApproved).length,
-      Approved: vendors.filter((v) => v.isApproved).length,
+      Pending: vendors.filter((v) => v.status === "pending" || (!v.status && !v.isApproved)).length,
+      Approved: vendors.filter((v) => v.status === "approved" || (!v.status && v.isApproved)).length,
+      Rejected: vendors.filter((v) => v.status === "rejected").length,
+      Blocked: vendors.filter((v) => v.status === "blocked").length,
     }),
     [vendors]
   );
 
   // ── Filtered vendors
   const filteredVendors = useMemo(() => {
-    if (activeTab === "Pending") return vendors.filter((v) => !v.isApproved);
-    if (activeTab === "Approved") return vendors.filter((v) => v.isApproved);
+    if (activeTab === "Pending") return vendors.filter((v) => v.status === "pending" || (!v.status && !v.isApproved));
+    if (activeTab === "Approved") return vendors.filter((v) => v.status === "approved" || (!v.status && v.isApproved));
+    if (activeTab === "Rejected") return vendors.filter((v) => v.status === "rejected");
+    if (activeTab === "Blocked") return vendors.filter((v) => v.status === "blocked");
     return vendors;
   }, [vendors, activeTab]);
 
@@ -483,7 +675,7 @@ const ManageVendors = () => {
 
                         {/* Status */}
                         <td className="px-5 py-4 whitespace-nowrap">
-                          <StatusBadge isApproved={vendor.isApproved} />
+                          <StatusBadge status={vendor.status || (vendor.isApproved ? "approved" : "pending")} />
                         </td>
 
                         {/* Actions */}
@@ -555,88 +747,105 @@ const ManageVendors = () => {
                               </button>
                             )}
 
-                            {/* Approve / Reject */}
-                            {!vendor.isApproved ? (
+                            {/* Status-based Actions */}
+                            {vendor.status === "pending" || (!vendor.status && !vendor.isApproved) ? (
+                              <>
+                                <button
+                                  onClick={() => handleApprove(vendor._id)}
+                                  disabled={isActioning}
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors">
+                                  {isActioning ? (
+                                    <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleReject(vendor._id)}
+                                  disabled={isActioning}
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors">
+                                  {isActioning ? (
+                                    <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  )}
+                                  Reject
+                                </button>
+                              </>
+                            ) : vendor.status === "approved" || (!vendor.status && vendor.isApproved) ? (
+                              <>
+                                <button
+                                  onClick={() => setBlockingVendor(vendor)}
+                                  disabled={isActioning}
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                                  </svg>
+                                  Block
+                                </button>
+                                <button
+                                  onClick={() => handleReject(vendor._id)}
+                                  disabled={isActioning}
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors">
+                                  {isActioning ? (
+                                    <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  )}
+                                  Reject
+                                </button>
+                              </>
+                            ) : vendor.status === "blocked" ? (
+                              <button
+                                onClick={() => handleUnblock(vendor._id)}
+                                disabled={isActioning}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors">
+                                {isActioning ? (
+                                  <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                  </svg>
+                                )}
+                                Unblock
+                              </button>
+                            ) : vendor.status === "rejected" ? (
                               <button
                                 onClick={() => handleApprove(vendor._id)}
                                 disabled={isActioning}
                                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors">
                                 {isActioning ? (
-                                  <svg
-                                    className="animate-spin w-3.5 h-3.5"
-                                    fill="none"
-                                    viewBox="0 0 24 24">
-                                    <circle
-                                      className="opacity-25"
-                                      cx="12"
-                                      cy="12"
-                                      r="10"
-                                      stroke="currentColor"
-                                      strokeWidth={4}
-                                    />
-                                    <path
-                                      className="opacity-75"
-                                      fill="currentColor"
-                                      d="M4 12a8 8 0 018-8v8H4z"
-                                    />
+                                  <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                                   </svg>
                                 ) : (
-                                  <svg
-                                    className="w-3.5 h-3.5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2.5}>
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M5 13l4 4L19 7"
-                                    />
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                   </svg>
                                 )}
                                 Approve
                               </button>
-                            ) : (
-                              <button
-                                onClick={() => handleReject(vendor._id)}
-                                disabled={isActioning}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors">
-                                {isActioning ? (
-                                  <svg
-                                    className="animate-spin w-3.5 h-3.5"
-                                    fill="none"
-                                    viewBox="0 0 24 24">
-                                    <circle
-                                      className="opacity-25"
-                                      cx="12"
-                                      cy="12"
-                                      r="10"
-                                      stroke="currentColor"
-                                      strokeWidth={4}
-                                    />
-                                    <path
-                                      className="opacity-75"
-                                      fill="currentColor"
-                                      d="M4 12a8 8 0 018-8v8H4z"
-                                    />
-                                  </svg>
-                                ) : (
-                                  <svg
-                                    className="w-3.5 h-3.5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2.5}>
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M6 18L18 6M6 6l12 12"
-                                    />
-                                  </svg>
-                                )}
-                                Reject
-                              </button>
-                            )}
+                            ) : null}
                           </div>
                         </td>
                       </tr>
@@ -654,6 +863,15 @@ const ManageVendors = () => {
         <ProfileModal
           vendor={viewingVendor}
           onClose={() => setViewingVendor(null)}
+        />
+      )}
+
+      {/* ── Block Modal ── */}
+      {blockingVendor && (
+        <BlockModal
+          vendor={blockingVendor}
+          onClose={() => setBlockingVendor(null)}
+          onBlock={handleBlock}
         />
       )}
 

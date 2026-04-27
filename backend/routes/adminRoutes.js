@@ -6,6 +6,8 @@ const {
   getAllVendors,
   approveVendor,
   rejectVendor,
+  blockVendor,
+  unblockVendor,
   deleteProduct,
   getPlatformStats,
   getAllServices,
@@ -32,11 +34,17 @@ router.route("/users/:id").delete(deleteUser);
 // GET /api/admin/vendors
 // PUT /api/admin/vendors/:id/approve
 // PUT /api/admin/vendors/:id/reject
+// PUT /api/admin/vendors/:id/block
+// PUT /api/admin/vendors/:id/unblock
 router.route("/vendors").get(getAllVendors);
 
 router.route("/vendors/:id/approve").put(approveVendor);
 
 router.route("/vendors/:id/reject").put(rejectVendor);
+
+router.route("/vendors/:id/block").put(blockVendor);
+
+router.route("/vendors/:id/unblock").put(unblockVendor);
 
 // ── Products
 // DELETE /api/admin/products/:id

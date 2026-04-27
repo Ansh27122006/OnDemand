@@ -286,6 +286,24 @@ const ManageOrders = () => {
     }
   };
 
+  // ── Get available status transitions
+  const getAvailableStatuses = (currentStatus) => {
+    const allStatuses = ["pending", "confirmed", "delivered"];
+    
+    // Once delivered, no transitions allowed
+    if (currentStatus === "delivered") {
+      return [];
+    }
+    
+    // Once confirmed, can only go to delivered (not back to pending)
+    if (currentStatus === "confirmed") {
+      return ["delivered"];
+    }
+    
+    // From pending, show available transitions
+    return allStatuses.filter(s => s !== currentStatus);
+  };
+
   // ── Handle return approve/reject
   const handleReturnAction = async (returnId, status, vendorNote = "") => {
     setReturnActionLoading(returnId);
@@ -529,13 +547,16 @@ const ManageOrders = () => {
                                 <select
                                   value={order.status?.toLowerCase() || "pending"}
                                   onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                                  disabled={isUpdating}
-                                  className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer transition shadow-sm disabled:opacity-50">
-                                  <option value="pending">Pending</option>
-                                  <option value="confirmed">Confirmed</option>
-                                  <option value="delivered">Delivered</option>
+                                  disabled={updatingId === order._id || getAvailableStatuses(order.status).length === 0}
+                                  className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                                  <option value={order.status?.toLowerCase()}>{order.status || "Pending"}</option>
+                                  {getAvailableStatuses(order.status).map((status) => (
+                                    <option key={status} value={status}>
+                                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                                    </option>
+                                  ))}
                                 </select>
-                                {isUpdating ? (
+                                {updatingId === order._id ? (
                                   <svg
                                     className="absolute right-2 top-1/2 -translate-y-1/2 animate-spin w-3.5 h-3.5 text-blue-500 pointer-events-none"
                                     fill="none"

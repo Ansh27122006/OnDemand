@@ -3,6 +3,7 @@ const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const VendorProfile = require("../models/VendorsProfile");
 const User = require("../models/User");
+const PDFDocument = require("pdfkit");
 const {
   sendOrderConfirmation,
   sendOrderStatusUpdate,
@@ -324,10 +325,273 @@ const getOrderById = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────
+// @desc    Generate and stream a PDF invoice for an order
+// @route   GET /api/orders/:id/invoice
+// @access  Customer only (own orders)
+// ─────────────────────────────────────────────
+const generateInvoice = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate("customerId", "name email")
+      .populate("vendorId", "storeName")
+      .populate("items.productId", "name price");
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    // Ensure the requesting customer owns this order
+    if (order.customerId._id.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json({ message: "Not authorised to download this invoice." });
+    }
+
+    // ── PDF setup ────────────────────────────────────────────────────────────
+    const doc = new PDFDocument({ margin: 50, size: "A4" });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=invoice-${order._id}.pdf`
+    );
+    doc.pipe(res);
+
+    // ── Colour palette ───────────────────────────────────────────────────────
+    const BLUE      = "#2563EB";
+    const DARK      = "#1E293B";
+    const MUTED     = "#64748B";
+    const LIGHT_BG  = "#F1F5F9";
+    const BORDER    = "#CBD5E1";
+    const WHITE     = "#FFFFFF";
+
+    const pageW     = doc.page.width;          // 595
+    const margin    = 50;
+    const contentW  = pageW - margin * 2;      // 495
+
+    // ── HEADER BAND ──────────────────────────────────────────────────────────
+    doc.rect(0, 0, pageW, 90).fill(BLUE);
+
+    doc
+      .fillColor(WHITE)
+      .font("Helvetica-Bold")
+      .fontSize(28)
+      .text("OnDemand", margin, 22);
+
+    doc
+      .fillColor("rgba(255,255,255,0.75)")
+      .font("Helvetica")
+      .fontSize(11)
+      .text("TAX INVOICE", margin, 58);
+
+    // Invoice number badge (top-right of banner)
+    const invoiceNo = `#${order._id.toString().slice(0, 8).toUpperCase()}`;
+    doc
+      .fillColor(WHITE)
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .text(invoiceNo, margin, 22, { align: "right", width: contentW });
+
+    // ── META SECTION ─────────────────────────────────────────────────────────
+    const metaTop = 110;
+
+    // Left column — invoice details
+    doc
+      .fillColor(MUTED)
+      .font("Helvetica")
+      .fontSize(9)
+      .text("INVOICE NO", margin, metaTop);
+    doc
+      .fillColor(DARK)
+      .font("Helvetica-Bold")
+      .fontSize(10)
+      .text(invoiceNo, margin, metaTop + 13);
+
+    const formattedDate = new Date(order.createdAt).toLocaleDateString(
+      "en-IN",
+      { day: "2-digit", month: "long", year: "numeric" }
+    );
+    doc
+      .fillColor(MUTED)
+      .font("Helvetica")
+      .fontSize(9)
+      .text("DATE", margin, metaTop + 35);
+    doc
+      .fillColor(DARK)
+      .font("Helvetica-Bold")
+      .fontSize(10)
+      .text(formattedDate, margin, metaTop + 48);
+
+    // Right column — customer details
+    const rightCol = margin + contentW / 2;
+    doc
+      .fillColor(MUTED)
+      .font("Helvetica")
+      .fontSize(9)
+      .text("BILLED TO", rightCol, metaTop);
+    doc
+      .fillColor(DARK)
+      .font("Helvetica-Bold")
+      .fontSize(10)
+      .text(order.customerId.name, rightCol, metaTop + 13);
+    doc
+      .fillColor(MUTED)
+      .font("Helvetica")
+      .fontSize(9)
+      .text(order.customerId.email, rightCol, metaTop + 28);
+
+    // Vendor line
+    doc
+      .fillColor(MUTED)
+      .font("Helvetica")
+      .fontSize(9)
+      .text("SOLD BY", rightCol, metaTop + 50);
+    doc
+      .fillColor(DARK)
+      .font("Helvetica-Bold")
+      .fontSize(10)
+      .text(order.vendorId?.storeName || "—", rightCol, metaTop + 63);
+
+    // ── DIVIDER ──────────────────────────────────────────────────────────────
+    const divider1Y = metaTop + 90;
+    doc.moveTo(margin, divider1Y).lineTo(margin + contentW, divider1Y).strokeColor(BORDER).lineWidth(1).stroke();
+
+    // ── ITEMS TABLE HEADER ───────────────────────────────────────────────────
+    const tableTop    = divider1Y + 14;
+    const col = {
+      item:  margin,
+      qty:   margin + contentW * 0.52,
+      unit:  margin + contentW * 0.68,
+      total: margin + contentW * 0.84,
+    };
+
+    // Header background
+    doc.rect(margin, tableTop, contentW, 22).fill(LIGHT_BG);
+
+    doc
+      .fillColor(MUTED)
+      .font("Helvetica-Bold")
+      .fontSize(8.5);
+
+    doc.text("ITEM",       col.item  + 6, tableTop + 7);
+    doc.text("QTY",        col.qty,       tableTop + 7);
+    doc.text("UNIT PRICE", col.unit,      tableTop + 7);
+    doc.text("TOTAL",      col.total,     tableTop + 7);
+
+    // ── ITEM ROWS ────────────────────────────────────────────────────────────
+    let rowY = tableTop + 28;
+    const rowH = 24;
+
+    order.items.forEach((item, idx) => {
+      // Alternating row tint
+      if (idx % 2 === 0) {
+        doc.rect(margin, rowY - 4, contentW, rowH).fill("#F8FAFC");
+      }
+
+      const unitPrice = item.price ?? item.productId?.price ?? 0;
+      const lineTotal = unitPrice * item.quantity;
+
+      doc
+        .fillColor(DARK)
+        .font("Helvetica")
+        .fontSize(9.5);
+
+      // Item name — truncate if very long
+      const itemName = (item.name || item.productId?.name || "—").slice(0, 48);
+      doc.text(itemName,                     col.item  + 6, rowY);
+      doc.text(String(item.quantity),        col.qty,       rowY);
+      doc.text(`Rs. ${unitPrice.toFixed(2)}`, col.unit,     rowY);
+      doc.text(`Rs. ${lineTotal.toFixed(2)}`, col.total,    rowY);
+
+      rowY += rowH;
+    });
+
+    // ── DIVIDER ──────────────────────────────────────────────────────────────
+    const divider2Y = rowY + 6;
+    doc.moveTo(margin, divider2Y).lineTo(margin + contentW, divider2Y).strokeColor(BORDER).lineWidth(1).stroke();
+
+    // ── SUMMARY BLOCK ────────────────────────────────────────────────────────
+    let summaryY = divider2Y + 16;
+    const labelX  = margin + contentW * 0.58;
+    const valueX  = margin + contentW * 0.80;
+    const summaryW = contentW * 0.20;
+
+    // Subtotal
+    const subtotal = order.items.reduce(
+      (sum, i) => sum + (i.price ?? 0) * i.quantity,
+      0
+    );
+
+    doc
+      .fillColor(MUTED)
+      .font("Helvetica")
+      .fontSize(9.5)
+      .text("Subtotal", labelX, summaryY)
+      .text(`Rs. ${subtotal.toFixed(2)}`, valueX, summaryY, { width: summaryW, align: "right" });
+
+    summaryY += 18;
+
+    // Discount row (only when a coupon was applied)
+    if (order.couponCode && order.discountAmount) {
+      doc
+        .fillColor("#DC2626")
+        .font("Helvetica")
+        .fontSize(9.5)
+        .text(`Discount (${order.couponCode})`, labelX, summaryY)
+        .text(`- Rs. ${order.discountAmount.toFixed(2)}`, valueX, summaryY, { width: summaryW, align: "right" });
+
+      summaryY += 18;
+    }
+
+    // Total row — highlighted
+    doc.rect(labelX - 8, summaryY - 5, contentW - (labelX - margin) + 8, 26).fill(BLUE);
+
+    doc
+      .fillColor(WHITE)
+      .font("Helvetica-Bold")
+      .fontSize(10.5)
+      .text("TOTAL AMOUNT", labelX, summaryY + 3)
+      .text(`Rs. ${order.totalAmount.toFixed(2)}`, valueX, summaryY + 3, { width: summaryW, align: "right" });
+
+    // ── FOOTER ───────────────────────────────────────────────────────────────
+    const footerY = doc.page.height - 60;
+    doc
+      .moveTo(margin, footerY)
+      .lineTo(margin + contentW, footerY)
+      .strokeColor(BORDER)
+      .lineWidth(0.5)
+      .stroke();
+
+    doc
+      .fillColor(MUTED)
+      .font("Helvetica")
+      .fontSize(9)
+      .text(
+        "Thank you for shopping with OnDemand",
+        margin,
+        footerY + 12,
+        { align: "center", width: contentW }
+      );
+
+    // ── Finalise ─────────────────────────────────────────────────────────────
+    doc.end();
+  } catch (error) {
+    console.error("generateInvoice error:", error);
+    // Only send JSON error if headers haven't been flushed yet
+    if (!res.headersSent) {
+      return res
+        .status(500)
+        .json({ message: "Server error while generating invoice." });
+    }
+  }
+};
+
 module.exports = {
   placeOrder,
   getMyOrders,
   getVendorOrders,
   updateOrderStatus,
   getOrderById,
+  generateInvoice,
 };

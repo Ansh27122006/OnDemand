@@ -177,7 +177,39 @@ function StatusBadge({ status }) {
   );
 }
 
-function OrderCard({ order, index, returnedOrderIds, returnRequestsMap, onRequestReturn }) {
+// ── Download Invoice hook ─────────────────────────────────────────────────────
+
+function useInvoiceDownload() {
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [downloadError, setDownloadError] = useState(null);
+
+  const downloadInvoice = async (orderId) => {
+    setDownloadingId(orderId);
+    setDownloadError(null);
+    try {
+      const response = await axios.get(`/orders/${orderId}/invoice`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `invoice-${orderId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setDownloadError(orderId);
+      setTimeout(() => setDownloadError(null), 3000);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  return { downloadingId, downloadError, downloadInvoice };
+}
+
+function OrderCard({ order, index, returnedOrderIds, returnRequestsMap, onRequestReturn, downloadingId, downloadError, onDownloadInvoice }) {
   const storeName = order.vendorId?.storeName ?? "Unknown Store";
   const items = order.items ?? [];
 
@@ -186,6 +218,9 @@ function OrderCard({ order, index, returnedOrderIds, returnRequestsMap, onReques
   const isReturnApproved = returnRequest?.status === "approved";
   const isReturned = order.status === "returned" || isReturnApproved;
   const isDelivered = order.status === "delivered";
+
+  const isDownloading = downloadingId === order._id;
+  const hasDownloadError = downloadError === order._id;
 
   return (
     <div
@@ -269,44 +304,75 @@ function OrderCard({ order, index, returnedOrderIds, returnRequestsMap, onReques
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-5 py-3.5 bg-slate-50 border-t border-slate-100">
-        <span className="text-xs text-slate-400">
-          {items.length} item{items.length !== 1 ? "s" : ""}
-        </span>
-        <div className="flex items-center gap-3">
-          <span className="text-base font-bold text-slate-900">
-            Rs. {order.totalAmount}
+      <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 space-y-2.5">
+        {/* Download error */}
+        {hasDownloadError && (
+          <p className="text-xs text-red-500 flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
+            </svg>
+            Failed to download invoice. Please try again.
+          </p>
+        )}
+
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <span className="text-xs text-slate-400">
+            {items.length} item{items.length !== 1 ? "s" : ""}
           </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-base font-bold text-slate-900">
+              Rs. {order.totalAmount}
+            </span>
 
-          {/* ── Return section ── */}
-          {isReturned ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-500 ring-1 ring-slate-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-              Returned
-            </span>
-          ) : hasReturnRequest ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-500 ring-1 ring-slate-200">
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              Return Requested
-            </span>
-          ) : isDelivered ? (
+            {/* ── Download Invoice ── */}
             <button
-              onClick={() => onRequestReturn(order)}
-              className="px-3 py-1.5 bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-300 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-              </svg>
-              Request Return
+              onClick={() => onDownloadInvoice(order._id)}
+              disabled={isDownloading}
+              title="Download Invoice"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+              {isDownloading ? (
+                <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+              )}
+              <span className="hidden sm:inline">{isDownloading ? "Downloading…" : "Invoice"}</span>
             </button>
-          ) : null}
 
-          <Link
-            to={`/customer/orders/${order._id}`}
-            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors">
-            View Details
-          </Link>
+            {/* ── Return section ── */}
+            {isReturned ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-500 ring-1 ring-slate-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                Returned
+              </span>
+            ) : hasReturnRequest ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-500 ring-1 ring-slate-200">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Return Requested
+              </span>
+            ) : isDelivered ? (
+              <button
+                onClick={() => onRequestReturn(order)}
+                className="px-3 py-1.5 bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-300 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                </svg>
+                Request Return
+              </button>
+            ) : null}
+
+            <Link
+              to={`/customer/orders/${order._id}`}
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors">
+              View Details
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -366,7 +432,7 @@ function EmptyState() {
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.5 2.5c-.6.6-.2 1.7.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
           />
         </svg>
         Browse Products
@@ -403,6 +469,9 @@ export default function MyOrders() {
   // Return request state — Map of orderId -> return request object
   const [returnRequestsMap, setReturnRequestsMap] = useState(new Map());
   const [activeReturnOrder, setActiveReturnOrder] = useState(null); // order object for modal
+
+  // Invoice download state (shared across all cards)
+  const { downloadingId, downloadError, downloadInvoice } = useInvoiceDownload();
 
   useEffect(() => {
     // Fetch orders and existing return requests in parallel
@@ -482,6 +551,9 @@ export default function MyOrders() {
                 index={i}
                 returnRequestsMap={returnRequestsMap}
                 onRequestReturn={setActiveReturnOrder}
+                downloadingId={downloadingId}
+                downloadError={downloadError}
+                onDownloadInvoice={downloadInvoice}
               />
             ))}
           </div>

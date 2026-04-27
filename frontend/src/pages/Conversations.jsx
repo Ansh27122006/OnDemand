@@ -68,6 +68,9 @@ export default function Conversations() {
   const { user } = useAuth();
   const { socket, isOnline } = useSocket();
 
+  // Normalise user id — backend may serialise as 'id' or '_id'
+  const userId = user?._id || user?.id;
+
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -76,14 +79,9 @@ export default function Conversations() {
     const fetchConversations = async () => {
       try {
         const { data } = await api.get("/chat/conversations");
-        // Filter out malformed conversations
-        const validConversations = (data.conversations || []).filter(
-          (conv) => conv && conv._id && Array.isArray(conv.participants)
-        );
-        setConversations(validConversations);
+        setConversations(data.conversations);
       } catch (err) {
         console.error("[Conversations] fetch error:", err);
-        setConversations([]);
       } finally {
         setLoading(false);
       }
@@ -97,11 +95,6 @@ export default function Conversations() {
     if (!socket) return;
 
     const onConversationUpdated = (updated) => {
-      // Validate the updated conversation before processing
-      if (!updated || !updated._id || !Array.isArray(updated.participants)) {
-        return;
-      }
-
       setConversations((prev) => {
         const exists = prev.some((c) => c._id === updated._id);
 
@@ -121,12 +114,10 @@ export default function Conversations() {
   }, [socket]);
 
   // ── Derive the other participant from a conversation ─────────────────────
-  const getOther = (conversation) => {
-    if (!conversation?.participants?.length) return null;
-    return conversation.participants.find(
-      (p) => p && p._id && p._id.toString() !== user._id.toString()
+  const getOther = (conversation) =>
+    conversation.participants.find(
+      (p) => p._id.toString() !== userId?.toString()
     );
-  };
 
   // ── Unread count for the current user ────────────────────────────────────
   const getUnread = (conversation) => {
@@ -135,8 +126,8 @@ export default function Conversations() {
     if (!counts) return 0;
     // Handle both plain object and Map-like structure
     return typeof counts.get === "function"
-      ? counts.get(user._id.toString()) || 0
-      : counts[user._id.toString()] || 0;
+      ? counts.get(userId?.toString()) || 0
+      : counts[userId?.toString()] || 0;
   };
 
   // ── Loading ───────────────────────────────────────────────────────────────

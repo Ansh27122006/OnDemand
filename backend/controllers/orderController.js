@@ -64,11 +64,12 @@ const placeOrder = async (req, res) => {
     // Normalise discount — default to 0 if no coupon was supplied
     const discountAmount = couponCode ? rawDiscount ?? 0 : 0;
 
-    // Compute the cart-wide subtotal upfront so we can validate the discount
-    const cartSubtotal = cart.items.reduce(
-      (sum, item) => sum + item.productId.price * item.quantity,
-      0
-    );
+    // Compute the cart subtotal the same way frontend does: with product discounts applied
+    // This ensures consistency between frontend validation and backend order calculation
+    const cartSubtotal = cart.items.reduce((sum, item) => {
+      const { finalPrice } = getDiscountedPrice(item.productId);
+      return sum + finalPrice * item.quantity;
+    }, 0);
 
     if (discountAmount > cartSubtotal) {
       return res.status(400).json({
@@ -105,17 +106,18 @@ const placeOrder = async (req, res) => {
         };
       });
 
+      // Calculate vendor subtotal using the same discounted prices as the frontend
       const vendorSubtotal = itemsSnapshot.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
       );
 
-      // Distribute discount proportionally: each vendor bears their share
-      // e.g. vendor contributes 40 % of cart → absorbs 40 % of discount
+      // Distribute coupon discount proportionally: each vendor bears their share
+      // e.g. vendor contributes 40% of discounted cart → absorbs 40% of coupon discount
       const vendorDiscount =
         cartSubtotal > 0 ? (vendorSubtotal / cartSubtotal) * discountAmount : 0;
 
-      const vendorTotal = vendorSubtotal - vendorDiscount;
+      const vendorTotal = Math.max(0, vendorSubtotal - vendorDiscount);
 
       const order = await Order.create({
         customerId: req.user._id,

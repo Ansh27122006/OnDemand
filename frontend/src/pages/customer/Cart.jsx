@@ -507,8 +507,8 @@ const Cart = () => {
   const discount = appliedCoupon?.discountAmount ?? 0;
   const total = Math.max(0, subtotal - discount);
 
-  // Calculate savings from both product discounts and coupon
-  const totalSavings = originalTotal - subtotal + discount;
+  // Calculate savings from product discounts only (coupon is shown separately)
+  const productDiscountSavings = originalTotal - subtotal;
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   if (!user) return null;
@@ -623,11 +623,11 @@ const Cart = () => {
                       ₹{subtotal.toFixed(2)}
                     </span>
                   </div>
-                  {totalSavings > 0 && (
+                  {productDiscountSavings > 0 && (
                     <div className="flex justify-between text-green-600">
-                      <span>Discount Savings</span>
+                      <span>Product Discount</span>
                       <span className="font-semibold">
-                        −₹{totalSavings.toFixed(2)}
+                        −₹{productDiscountSavings.toFixed(2)}
                       </span>
                     </div>
                   )}
@@ -661,9 +661,6 @@ const Cart = () => {
 
                 <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
                   <span className="font-black text-slate-900">Total</span>
-                  <span className="text-xl font-black text-blue-600">
-                    ₹{total.toFixed(2)}
-                  </span>
                   <div className="text-right">
                     <span className="text-xl font-black text-blue-600">
                       ₹{total.toFixed(2)}

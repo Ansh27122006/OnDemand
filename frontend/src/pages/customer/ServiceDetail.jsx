@@ -86,7 +86,7 @@ const BookingSuccess = ({ service, date }) => (
         </span>
       </div>
     </div>
-    <Link to="/my-bookings" className="text-center text-sm font-semibold text-green-700 hover:text-green-800 transition-colors">
+    <Link to="customer/bookings" className="text-center text-sm font-semibold text-green-700 hover:text-green-800 transition-colors">
       View My Bookings →
     </Link>
   </div>

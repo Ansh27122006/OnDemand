@@ -52,11 +52,13 @@ function BookingCard({ booking, index }) {
   const serviceName = booking.serviceId?.name ?? "Service";
   const storeName = booking.vendorId?.storeName ?? "Unknown Store";
 
-  // ✅ NEW — if booking is pending and scheduled date has passed → show as expired
+  // ✅ If booking status is already "expired" (set by backend), use it
+  // Otherwise, client-side check: if pending/confirmed and scheduled date has passed → show as expired
   const isExpired =
-    booking.status === "pending" &&
-    booking.scheduledDate &&
-    new Date(booking.scheduledDate) < new Date();
+    booking.status === "expired" ||
+    ((booking.status === "pending" || booking.status === "confirmed") &&
+      booking.scheduledDate &&
+      new Date(booking.scheduledDate) < new Date());
 
   const displayStatus = isExpired ? "expired" : booking.status;
 

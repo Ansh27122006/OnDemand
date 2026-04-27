@@ -250,6 +250,21 @@ const updateOrderStatus = async (req, res) => {
         .json({ message: "Not authorised to update this order." });
     }
 
+    // ─── Status Transition Validation ───────────────────────────────────
+    // Once an order is "delivered", it cannot be changed to "pending" or "confirmed"
+    if (order.status === "delivered") {
+      return res.status(400).json({
+        message: "Cannot update status. Order is already delivered and cannot be modified.",
+      });
+    }
+
+    // Once an order is "confirmed", it cannot go back to "pending"
+    if (order.status === "confirmed" && status === "pending") {
+      return res.status(400).json({
+        message: "Cannot change status from confirmed back to pending.",
+      });
+    }
+
     const updatedOrder = await Order.findByIdAndUpdate(
       req.params.id,
       { status },

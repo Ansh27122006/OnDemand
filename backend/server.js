@@ -1,5 +1,6 @@
 const dns = require("dns");
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -55,22 +56,83 @@ app.use(
 );
 app.use(express.json());
 
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "ejs");
+
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// Landing page server-side rendered view
+const landingStats = [
+  { value: "2,400+", label: "Active Vendors" },
+  { value: "18,000+", label: "Products Listed" },
+  { value: "95%", label: "Satisfaction Rate" },
+  { value: "40+", label: "Categories" },
+];
+
+const landingFeatures = [
+  {
+    icon: "shopping-bag",
+    title: "Buy Products",
+    description:
+      "Discover thousands of products from verified vendors. Filter by category, price, and ratings to find exactly what you need — delivered to your door.",
+    accent: "bg-blue-50 text-blue-600",
+    border: "hover:border-blue-200",
+  },
+  {
+    icon: "calendar",
+    title: "Book Services",
+    description:
+      "From home repairs to professional consulting — browse service providers, check availability, and book appointments in just a few clicks.",
+    accent: "bg-indigo-50 text-indigo-600",
+    border: "hover:border-indigo-200",
+  },
+  {
+    icon: "shield-check",
+    title: "Trusted Vendors",
+    description:
+      "Every vendor is manually reviewed and approved by our team. Real reviews, verified credentials, and a transparent rating system you can rely on.",
+    accent: "bg-sky-50 text-sky-600",
+    border: "hover:border-sky-200",
+  },
+];
+
+app.get("/", (req, res) => {
+  res.render("landing", {
+    stats: landingStats,
+    features: landingFeatures,
+    year: new Date().getFullYear(),
+  });
+});
+
 // Routes
-app.use("/api/auth",     authRoutes);
-app.use("/api/vendors",  vendorRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/vendors", vendorRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/services", serviceRoutes);
-app.use("/api/cart",     cartRoutes);
-app.use("/api/orders",   orderRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/orders", orderRoutes);
 app.use("/api/bookings", bookingRoutes);
-app.use("/api/admin",    adminRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/wishlist", wishlistRoutes);
-app.use("/api/reviews",  reviewRoutes);
-app.use("/api/coupons",  couponRoutes);
-app.use("/api/chat",     chatRoutes);
-app.use("/api/returns",  returnRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/coupons", couponRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/returns", returnRoutes);
+
+if (process.env.NODE_ENV === "production") {
+  const frontendBuildPath = path.join(__dirname, "../frontend/dist");
+  app.use(express.static(frontendBuildPath));
+
+  app.get("*", (req, res, next) => {
+    if (
+      req.originalUrl.startsWith("/api") ||
+      req.originalUrl.startsWith("/api-docs")
+    ) {
+      return next();
+    }
+    res.sendFile(path.join(frontendBuildPath, "index.html"));
+  });
+}
 
 // Global error handler
 const PORT = process.env.PORT || 5000;

@@ -12,27 +12,7 @@ const { protect, authorizeRoles } = require("../middleware/authMiddleware");
 const VendorProfile = require("../models/VendorsProfile");
 const { upload } = require("../config/cloudinary.js");
 
-/**
- * @swagger
- * /vendors:
- *   get:
- *     summary: Get all approved vendor profiles
- *     tags: [Vendors]
- *     responses:
- *       200:
- *         description: List of all approved vendors
- */
 router.get("/", getAllApprovedVendors);
-
-/**
- * @swagger
- * /vendors:
- *   post:
- *     summary: Create a vendor profile
- *     tags: [Vendors]
- *     security:
- *       - bearerAuth: []
- */
 router.post(
   "/",
   protect,
@@ -78,33 +58,12 @@ router.get("/profile", protect, async (req, res) => {
 });
 
 // ⚠️ MUST be before /:id
-router.put(
-  "/toggle-sale",
-  protect,
-  authorizeRoles("vendor"),
-  toggleSale
-);
+router.put("/toggle-sale", protect, authorizeRoles("vendor"), toggleSale);
 
 router.get("/:vendorId/store", getVendorStore);
 
-/**
- * @swagger
- * /vendors/{id}:
- *   get:
- *     summary: Get a vendor profile by ID
- *     tags: [Vendors]
- */
 router.get("/:id", getVendorProfile);
 
-/**
- * @swagger
- * /vendors/{id}:
- *   put:
- *     summary: Update a vendor profile
- *     tags: [Vendors]
- *     security:
- *       - bearerAuth: []
- */
 router.put(
   "/:id",
   protect,

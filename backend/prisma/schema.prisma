@@ -1,0 +1,42 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// MODEL 1 — Admin Audit Logs
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  adminId     String   // MongoDB User _id of the admin
+  adminName   String
+  action      String   // e.g. APPROVE_VENDOR, REJECT_VENDOR, DELETE_USER
+  targetId    String   // MongoDB _id of the affected document
+  targetName  String   // name of the affected vendor/user/product
+  details     String?  // optional extra info
+  createdAt   DateTime @default(now())
+}
+
+// MODEL 2 — Daily Platform Analytics
+model DailyAnalytics {
+  id            Int      @id @default(autoincrement())
+  date          DateTime @unique @default(now())
+  totalOrders   Int      @default(0)
+  totalRevenue  Float    @default(0)
+  newUsers      Int      @default(0)
+  newVendors    Int      @default(0)
+  totalBookings Int      @default(0)
+  createdAt     DateTime @default(now())
+}
+
+// MODEL 3 — Newsletter Subscribers
+model NewsletterSubscriber {
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  name        String?
+  isActive    Boolean  @default(true)
+  subscribedAt DateTime @default(now())
+}

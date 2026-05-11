@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../api/axios";
 
 /* ── Feature card data ── */
 const features = [
@@ -76,6 +78,68 @@ const stats = [
 ];
 
 const LandingPage = () => {
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState(""); // 'success', 'error', 'info'
+  const [showUnsubscribeForm, setShowUnsubscribeForm] = useState(false);
+  const [unsubscribeEmail, setUnsubscribeEmail] = useState("");
+
+  // Handle newsletter subscription
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      setMessage("Please enter an email address");
+      setMessageType("error");
+      return;
+    }
+
+    try {
+      const response = await api.post("/newsletter/subscribe", {
+        email,
+        name: name || undefined,
+      });
+      setMessage(response.data.message);
+      setMessageType("success");
+      setEmail("");
+      setName("");
+    } catch (error) {
+      if (error.response?.status === 400) {
+        setMessage("You are already subscribed!");
+        setMessageType("info");
+      } else {
+        setMessage(error.response?.data?.error || "Failed to subscribe");
+        setMessageType("error");
+      }
+    }
+  };
+
+  // Handle unsubscribe
+  const handleUnsubscribe = async (e) => {
+    e.preventDefault();
+    if (!unsubscribeEmail) {
+      setMessage("Please enter an email address");
+      setMessageType("error");
+      return;
+    }
+
+    try {
+      const response = await api.post("/newsletter/unsubscribe", {
+        email: unsubscribeEmail,
+      });
+      setMessage(response.data.message);
+      setMessageType("success");
+      setUnsubscribeEmail("");
+      setShowUnsubscribeForm(false);
+    } catch (error) {
+      setMessage(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to unsubscribe"
+      );
+      setMessageType("error");
+    }
+  };
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800 antialiased">
       {/* ── Hero ── */}
@@ -201,6 +265,105 @@ const LandingPage = () => {
           className="inline-block px-8 py-3.5 bg-white text-blue-600 font-bold rounded-xl hover:bg-blue-50 transition-colors shadow-lg text-sm">
           Start Selling Today
         </Link>
+      </section>
+
+      {/* ── Newsletter Section ── */}
+      <section className="bg-gradient-to-r from-slate-900 to-blue-950 py-16 px-6 text-white">
+        <div className="max-w-2xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight mb-3">
+              Stay Updated with OnDemand
+            </h2>
+            <p className="text-slate-300 text-lg">
+              Get the latest deals, new vendors, and platform updates in your
+              inbox.
+            </p>
+          </div>
+
+          {/* Subscription Form */}
+          <form onSubmit={handleSubscribe} className="space-y-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                placeholder="Your name (optional)"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="flex-1 px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              />
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="flex-1 px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              />
+              <button
+                type="submit"
+                className="px-6 py-3 bg-blue-500 hover:bg-blue-400 text-white font-bold rounded-lg transition-colors whitespace-nowrap">
+                Subscribe
+              </button>
+            </div>
+
+            {/* Message Display */}
+            {message && (
+              <div
+                className={`p-3 rounded-lg text-sm font-medium text-center ${
+                  messageType === "success"
+                    ? "bg-green-500/20 text-green-200 border border-green-500/30"
+                    : messageType === "error"
+                    ? "bg-red-500/20 text-red-200 border border-red-500/30"
+                    : "bg-blue-500/20 text-blue-200 border border-blue-500/30"
+                }`}>
+                {message}
+              </div>
+            )}
+          </form>
+
+          {/* Unsubscribe Link */}
+          <div className="text-center">
+            <p className="text-sm text-slate-400 mb-2">
+              {!showUnsubscribeForm ? (
+                <>
+                  Unsubscribe anytime.{" "}
+                  <button
+                    onClick={() => setShowUnsubscribeForm(true)}
+                    className="text-blue-400 hover:text-blue-300 underline transition-colors">
+                    Click here
+                  </button>
+                </>
+              ) : (
+                <form
+                  onSubmit={handleUnsubscribe}
+                  className="inline-flex gap-2">
+                  <input
+                    type="email"
+                    placeholder="Enter email to unsubscribe"
+                    value={unsubscribeEmail}
+                    onChange={(e) => setUnsubscribeEmail(e.target.value)}
+                    required
+                    className="px-3 py-1 rounded text-sm bg-white/10 border border-white/20 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3 py-1 bg-red-500/30 hover:bg-red-500/40 text-red-200 rounded text-sm transition-colors">
+                    Unsubscribe
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUnsubscribeForm(false);
+                      setUnsubscribeEmail("");
+                    }}
+                    className="px-3 py-1 bg-slate-500/30 hover:bg-slate-500/40 text-slate-300 rounded text-sm transition-colors">
+                    Cancel
+                  </button>
+                </form>
+              )}
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* ── Footer ── */}

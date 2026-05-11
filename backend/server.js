@@ -22,6 +22,7 @@ const couponRoutes = require("./routes/couponRoutes.js");
 const reviewRoutes = require("./routes/reviewRoutes.js");
 const chatRoutes = require("./routes/chatRoutes.js");
 const returnRoutes = require("./routes/ReturnRoutes.js");
+const analyticsRoutes = require("./routes/analyticsRoutes.js");
 
 // ── Socket.io setup ────────────────────────────────────────────────────────
 const http = require("http");
@@ -118,6 +119,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/returns", returnRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 if (process.env.NODE_ENV === "production") {
   const frontendBuildPath = path.join(__dirname, "../frontend/dist");

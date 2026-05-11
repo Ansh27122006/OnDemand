@@ -44,6 +44,7 @@ import AdminVendorStore from "./pages/admin/AdminVendorStore";
 import ManageReturns from "./pages/admin/ManageReturns";
 import PlatformAnalytics from "./pages/admin/PlatformAnalytics";
 import NewsletterSubscribers from "./pages/admin/NewsletterSubscribers";
+import AuditLogs from "./pages/admin/AuditLogs";
 
 // Chat pages
 import Conversations from "./pages/Conversations";
@@ -108,6 +109,7 @@ const App = () => {
           <Route path="/admin/returns" element={<ManageReturns />} />
           <Route path="/admin/analytics" element={<PlatformAnalytics />} />
           <Route path="/admin/newsletter" element={<NewsletterSubscribers />} />
+          <Route path="/admin/audit" element={<AuditLogs />} />
         </Route>
 
         {/* ── Chat Routes (all authenticated users) ── */}

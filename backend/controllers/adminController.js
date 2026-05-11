@@ -4,6 +4,7 @@ const Product = require("../models/Product");
 const Service = require("../models/Service");
 const Order = require("../models/Order");
 const Bookings = require("../models/Bookings");
+const { createAuditLog } = require("./auditController");
 const {
   sendVendorApproved,
   sendVendorRejected,
@@ -38,7 +39,19 @@ const deleteUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    const userName = user.name || user.email;
     await user.deleteOne();
+    
+    // Log audit event (fire-and-forget)
+    createAuditLog({
+      adminId: req.user._id.toString(),
+      adminName: req.user.name,
+      action: "DELETE_USER",
+      targetId: user._id.toString(),
+      targetName: userName,
+      details: `Deleted user: ${userName}`,
+    }).catch(console.error);
+
     res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -85,6 +98,16 @@ const approveVendor = async (req, res) => {
       storeName: vendor.storeName,
     }).catch(console.error);
 
+    // ── Audit log (fire-and-forget) ──────────────────────────────────────────
+    createAuditLog({
+      adminId: req.user._id.toString(),
+      adminName: req.user.name,
+      action: "APPROVE_VENDOR",
+      targetId: vendor._id.toString(),
+      targetName: vendor.storeName,
+      details: `Approved vendor store: ${vendor.storeName}`,
+    }).catch(console.error);
+
     res
       .status(200)
       .json({ message: "Vendor approved successfully", vendor: updatedVendor });
@@ -117,6 +140,16 @@ const rejectVendor = async (req, res) => {
       vendorEmail: vendor.userId.email,
       vendorName: vendor.userId.name,
       storeName: vendor.storeName,
+    }).catch(console.error);
+
+    // ── Audit log (fire-and-forget) ──────────────────────────────────────────
+    createAuditLog({
+      adminId: req.user._id.toString(),
+      adminName: req.user.name,
+      action: "REJECT_VENDOR",
+      targetId: vendor._id.toString(),
+      targetName: vendor.storeName,
+      details: `Rejected vendor store: ${vendor.storeName}`,
     }).catch(console.error);
 
     res
@@ -195,7 +228,19 @@ const deleteProduct = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
+    const productName = product.name;
     await product.deleteOne();
+    
+    // Log audit event (fire-and-forget)
+    createAuditLog({
+      adminId: req.user._id.toString(),
+      adminName: req.user.name,
+      action: "DELETE_PRODUCT",
+      targetId: product._id.toString(),
+      targetName: productName,
+      details: `Deleted product: ${productName}`,
+    }).catch(console.error);
+
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -259,7 +304,20 @@ const deleteService = async (req, res) => {
     if (!service) {
       return res.status(404).json({ message: "Service not found" });
     }
+    
+    const serviceName = service.title;
     await service.deleteOne();
+    
+    // Log audit event (fire-and-forget)
+    createAuditLog({
+      adminId: req.user._id.toString(),
+      adminName: req.user.name,
+      action: "DELETE_SERVICE",
+      targetId: service._id.toString(),
+      targetName: serviceName,
+      details: `Deleted service: ${serviceName}`,
+    }).catch(console.error);
+    
     res.status(200).json({ message: "Service deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

@@ -20,7 +20,6 @@ const statusConfig = {
     dot: "bg-red-500",
   },
 };
-
 const StatusBadge = ({ status }) => {
   const cfg = statusConfig[status?.toLowerCase()] || statusConfig.pending;
   return (
@@ -54,7 +53,9 @@ const EmptyState = ({ filter, query }) => (
             />
           </svg>
         </div>
-        <p className="text-slate-600 font-bold text-sm">No return requests found</p>
+        <p className="text-slate-600 font-bold text-sm">
+          No return requests found
+        </p>
         <p className="text-slate-400 text-xs">
           {query
             ? `No results for "${query}". Try a different search.`
@@ -81,7 +82,9 @@ const ManageReturns = () => {
     const fetchReturns = async () => {
       try {
         const res = await api.get("/returns/all");
-        const data = Array.isArray(res.data) ? res.data : res.data.returns || [];
+        const data = Array.isArray(res.data)
+          ? res.data
+          : res.data.returns || [];
         setReturns(data);
       } catch (err) {
         setError("Failed to load return requests. Please refresh the page.");
@@ -96,9 +99,12 @@ const ManageReturns = () => {
   const counts = useMemo(
     () => ({
       All: returns.length,
-      Pending: returns.filter((r) => r.status?.toLowerCase() === "pending").length,
-      Approved: returns.filter((r) => r.status?.toLowerCase() === "approved").length,
-      Rejected: returns.filter((r) => r.status?.toLowerCase() === "rejected").length,
+      Pending: returns.filter((r) => r.status?.toLowerCase() === "pending")
+        .length,
+      Approved: returns.filter((r) => r.status?.toLowerCase() === "approved")
+        .length,
+      Rejected: returns.filter((r) => r.status?.toLowerCase() === "rejected")
+        .length,
     }),
     [returns]
   );
@@ -109,7 +115,9 @@ const ManageReturns = () => {
 
     // Filter by tab
     if (activeTab !== "All") {
-      list = list.filter((r) => r.status?.toLowerCase() === activeTab.toLowerCase());
+      list = list.filter(
+        (r) => r.status?.toLowerCase() === activeTab.toLowerCase()
+      );
     }
 
     // Filter by search — customer name or order ID
@@ -163,12 +171,20 @@ const ManageReturns = () => {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-
         {/* ── Error ── */}
         {error && (
           <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
-            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
+            <svg
+              className="w-5 h-5 shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"
+              />
             </svg>
             {error}
           </div>
@@ -176,7 +192,6 @@ const ManageReturns = () => {
 
         {/* ── Filters row: tabs + search ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-
           {/* Tab pills */}
           <div className="flex items-center gap-1 p-1 bg-white border border-slate-200 rounded-xl shadow-sm w-fit flex-wrap">
             {TABS.map((tab) => (
@@ -209,7 +224,11 @@ const ManageReturns = () => {
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
             <input
               type="text"
@@ -222,8 +241,17 @@ const ManageReturns = () => {
               <button
                 onClick={() => setSearchQuery("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             )}
@@ -236,7 +264,14 @@ const ManageReturns = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  {["Order ID", "Customer", "Vendor Store", "Reason", "Status", "Date"].map((h) => (
+                  {[
+                    "Order ID",
+                    "Customer",
+                    "Vendor Store",
+                    "Reason",
+                    "Status",
+                    "Date",
+                  ].map((h) => (
                     <th
                       key={h}
                       className="text-left text-xs font-bold text-slate-400 uppercase tracking-wider px-5 py-3.5 whitespace-nowrap">
@@ -247,11 +282,20 @@ const ManageReturns = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.length === 0 ? (
-                  <EmptyState filter={activeTab} query={searchQuery} />
+                  <EmptyState
+                    filter={activeTab}
+                    query={searchQuery}
+                  />
                 ) : (
                   filtered.map((req) => {
-                    const orderId = (req.orderId?._id || req.orderId || "").slice(0, 8).toUpperCase() || "—";
-                    const customer = req.customerId?.name || req.customerId?.email || "Unknown";
+                    const orderId =
+                      (req.orderId?._id || req.orderId || "")
+                        .slice(0, 8)
+                        .toUpperCase() || "—";
+                    const customer =
+                      req.customerId?.name ||
+                      req.customerId?.email ||
+                      "Unknown";
                     const storeName = req.vendorId?.storeName || "—";
                     const date = req.createdAt
                       ? new Date(req.createdAt).toLocaleDateString("en-US", {
@@ -262,8 +306,9 @@ const ManageReturns = () => {
                       : "—";
 
                     return (
-                      <tr key={req._id} className="hover:bg-slate-50 transition-colors">
-
+                      <tr
+                        key={req._id}
+                        className="hover:bg-slate-50 transition-colors">
                         {/* Order ID */}
                         <td className="px-5 py-4 whitespace-nowrap">
                           <span className="font-black text-slate-800 font-mono text-xs tracking-wider">
@@ -277,7 +322,9 @@ const ManageReturns = () => {
                             <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 text-xs font-bold flex items-center justify-center shrink-0">
                               {customer.charAt(0).toUpperCase()}
                             </div>
-                            <span className="font-medium text-slate-700">{customer}</span>
+                            <span className="font-medium text-slate-700">
+                              {customer}
+                            </span>
                           </div>
                         </td>
 
@@ -287,7 +334,9 @@ const ManageReturns = () => {
                             <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 text-xs font-bold flex items-center justify-center shrink-0">
                               {storeName.charAt(0).toUpperCase()}
                             </div>
-                            <span className="font-medium text-slate-700">{storeName}</span>
+                            <span className="font-medium text-slate-700">
+                              {storeName}
+                            </span>
                           </div>
                         </td>
 
@@ -307,7 +356,6 @@ const ManageReturns = () => {
                         <td className="px-5 py-4 whitespace-nowrap">
                           <span className="text-xs text-slate-500">{date}</span>
                         </td>
-
                       </tr>
                     );
                   })
@@ -320,12 +368,12 @@ const ManageReturns = () => {
           {filtered.length > 0 && (
             <div className="px-5 py-3 border-t border-slate-100 bg-slate-50">
               <p className="text-xs text-slate-400">
-                Showing {filtered.length} of {returns.length} return request{returns.length !== 1 ? "s" : ""}
+                Showing {filtered.length} of {returns.length} return request
+                {returns.length !== 1 ? "s" : ""}
               </p>
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

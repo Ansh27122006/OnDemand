@@ -23,7 +23,8 @@ const reviewRoutes = require("./routes/reviewRoutes.js");
 const chatRoutes = require("./routes/chatRoutes.js");
 const returnRoutes = require("./routes/ReturnRoutes.js");
 const analyticsRoutes = require("./routes/analyticsRoutes.js");
-const newsletterRoutes = require("./routes/newsletterRoutes.js");const auditRoutes = require("./routes/auditRoutes");
+const newsletterRoutes = require("./routes/newsletterRoutes.js");
+const auditRoutes = require("./routes/auditRoutes");
 // ── Socket.io setup ────────────────────────────────────────────────────────
 const http = require("http");
 const { Server } = require("socket.io");
@@ -162,7 +163,11 @@ app.use((req, res) => {
   });
 });
 
-// ── server.listen instead of app.listen ───────────────────────────────────
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Start server only when this file is run directly
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;

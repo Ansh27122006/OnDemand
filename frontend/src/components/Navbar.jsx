@@ -44,6 +44,7 @@ const navConfig = {
       { label: "Manage Services", to: "/admin/services"  },
       { label: "Return Requests", to: "/admin/returns"   },
       { label: "Platform Analytics", to: "/admin/analytics" },
+      { label: "Newsletter",      to: "/admin/newsletter" },
       { label: "Messages",        to: "/conversations"   },
       { label: "Edit Profile",    to: "/profile/edit"    },
     ],

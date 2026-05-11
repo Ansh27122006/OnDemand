@@ -42,6 +42,7 @@ import AdminManageProducts from "./pages/admin/AdminManageProducts";
 import AdminManageServices from "./pages/admin/AdminManageServices";
 import AdminVendorStore from "./pages/admin/AdminVendorStore";
 import ManageReturns from "./pages/admin/ManageReturns";
+import PlatformAnalytics from "./pages/admin/PlatformAnalytics";
 
 // Chat pages
 import Conversations from "./pages/Conversations";
@@ -104,6 +105,7 @@ const App = () => {
           <Route path="/admin/services" element={<AdminManageServices />} />
           <Route path="/admin/vendors/:id/store" element={<AdminVendorStore />} />
           <Route path="/admin/returns" element={<ManageReturns />} />
+          <Route path="/admin/analytics" element={<PlatformAnalytics />} />
         </Route>
 
         {/* ── Chat Routes (all authenticated users) ── */}

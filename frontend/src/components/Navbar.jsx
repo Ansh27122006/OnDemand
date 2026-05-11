@@ -45,6 +45,7 @@ const navConfig = {
       { label: "Return Requests", to: "/admin/returns"   },
       { label: "Platform Analytics", to: "/admin/analytics" },
       { label: "Newsletter",      to: "/admin/newsletter" },
+      { label: "Activity Logs",   to: "/admin/audit"     },
       { label: "Messages",        to: "/conversations"   },
       { label: "Edit Profile",    to: "/profile/edit"    },
     ],

@@ -23,8 +23,7 @@ const reviewRoutes = require("./routes/reviewRoutes.js");
 const chatRoutes = require("./routes/chatRoutes.js");
 const returnRoutes = require("./routes/ReturnRoutes.js");
 const analyticsRoutes = require("./routes/analyticsRoutes.js");
-const newsletterRoutes = require("./routes/newsletterRoutes.js");
-
+const newsletterRoutes = require("./routes/newsletterRoutes.js");const auditRoutes = require("./routes/auditRoutes");
 // ── Socket.io setup ────────────────────────────────────────────────────────
 const http = require("http");
 const { Server } = require("socket.io");
@@ -122,6 +121,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/returns", returnRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/newsletter", newsletterRoutes);
+app.use("/api/audit", auditRoutes);
 
 if (process.env.NODE_ENV === "production") {
   const frontendBuildPath = path.join(__dirname, "../frontend/dist");

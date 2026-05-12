@@ -20,6 +20,7 @@ const statusConfig = {
     dot: "bg-red-500",
   },
 };
+
 const StatusBadge = ({ status }) => {
   const cfg = statusConfig[status?.toLowerCase()] || statusConfig.pending;
   return (
